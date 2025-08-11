@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const authRoutes = require('./routes/auth')
+const authRoutes = require('./routes/auth');
+const quizRoutes = require('./routes/quiz');
 const path = require('path');
 const cors = require('cors');
 const dotenv = require('dotenv')
@@ -18,6 +19,7 @@ app.use(cors({
 
 
 app.use('/auth', authRoutes)
+app.use('/api/quiz', quizRoutes)
 
 async function start() {
   try {
