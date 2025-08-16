@@ -112,6 +112,26 @@ export interface GetQuizzesParams {
   author?: string;
 }
 
+export interface Tag {
+  _id: string;
+  name: string;
+  count: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTagData {
+  name: string;
+}
+
+export interface GetTagsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: 'name' | 'count' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
 // Quiz API functions
 export const quizApi = {
   // Get all quizzes with optional filters
@@ -197,6 +217,62 @@ export const authApi = {
   // Get current user (if token exists)
   getCurrentUser: async (): Promise<ApiResponse<any>> => {
     const response: AxiosResponse<ApiResponse<any>> = await api.get('/auth/me');
+    return response.data;
+  },
+};
+
+// Tag API functions
+export const tagApi = {
+  // Get all tags with optional filters and pagination
+  getTags: async (params: GetTagsParams = {}): Promise<ApiResponse<Tag[]>> => {
+    const response: AxiosResponse<ApiResponse<Tag[]>> = await api.get('/api/tags', { params });
+    return response.data;
+  },
+
+  // Get single tag by ID
+  getTag: async (id: string): Promise<ApiResponse<Tag>> => {
+    const response: AxiosResponse<ApiResponse<Tag>> = await api.get(`/api/tags/${id}`);
+    return response.data;
+  },
+
+  // Create new tag
+  createTag: async (data: CreateTagData): Promise<ApiResponse<Tag>> => {
+    const response: AxiosResponse<ApiResponse<Tag>> = await api.post('/api/tags', data);
+    return response.data;
+  },
+
+  // Update tag
+  updateTag: async (id: string, data: CreateTagData): Promise<ApiResponse<Tag>> => {
+    const response: AxiosResponse<ApiResponse<Tag>> = await api.put(`/api/tags/${id}`, data);
+    return response.data;
+  },
+
+  // Delete tag
+  deleteTag: async (id: string): Promise<ApiResponse> => {
+    const response: AxiosResponse<ApiResponse> = await api.delete(`/api/tags/${id}`);
+    return response.data;
+  },
+
+  // Get popular/trending tags
+  getPopularTags: async (limit: number = 20): Promise<ApiResponse<Tag[]>> => {
+    const response: AxiosResponse<ApiResponse<Tag[]>> = await api.get('/api/tags/popular', { 
+      params: { limit } 
+    });
+    return response.data;
+  },
+
+  // Search tags by name
+  searchTags: async (query: string, limit: number = 10): Promise<ApiResponse<Tag[]>> => {
+    const response: AxiosResponse<ApiResponse<Tag[]>> = await api.get('/api/tags/search', { 
+      params: { q: query, limit } 
+    });
+    return response.data;
+  },
+
+  // Get tags used by current user
+  getUserTags: async (userId?: string): Promise<ApiResponse<Tag[]>> => {
+    const endpoint = userId ? `/api/tags/user/${userId}` : '/api/tags/user/me';
+    const response: AxiosResponse<ApiResponse<Tag[]>> = await api.get(endpoint);
     return response.data;
   },
 };

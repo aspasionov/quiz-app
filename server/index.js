@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
 const quizRoutes = require('./routes/quiz');
+const tagRoutes = require('./routes/tag');
 const path = require('path');
 const cors = require('cors');
 const dotenv = require('dotenv')
@@ -20,6 +21,7 @@ app.use(cors({
 
 app.use('/auth', authRoutes)
 app.use('/api/quiz', quizRoutes)
+app.use('/api/tags', tagRoutes)
 
 async function start() {
   try {
