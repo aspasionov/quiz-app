@@ -28,8 +28,7 @@ export type Quiz = {
   tags: string[]
   maxPoints: number
   isPrivate: boolean
-  visibility: 'private' | 'public' | 'selected'
-  allowedUsers: User[] | string[]
+  visibility: 'private' | 'public'
   questions: Question[]
   createdAt: string
   updatedAt: string

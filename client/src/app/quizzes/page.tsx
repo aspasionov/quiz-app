@@ -35,309 +35,44 @@ import {
 } from '@mui/icons-material';
 import { withAuth } from '@/components/WithAuth';
 import { Quiz } from '@/types';
-import { getAllQuizzes } from '@/data/mockQuizzes';
-
-// Mock data for additional quizzes (extending our base set)
-const additionalQuizzes: Quiz[] = [
-  {
-    _id: '1',
-    title: 'JavaScript Fundamentals',
-    author: 'John Doe',
-    description: 'Test your knowledge of JavaScript basics including variables, functions, and objects.',
-    tags: ['JavaScript', 'Programming', 'Web Development'],
-    maxPoints: 100,
-    isPrivate: false,
-    visibility: 'public',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-01-15T10:00:00Z',
-  },
-  {
-    _id: '2',
-    title: 'React Hooks Deep Dive',
-    author: 'Jane Smith',
-    description: 'Advanced React hooks concepts and best practices.',
-    tags: ['React', 'Hooks', 'Frontend'],
-    maxPoints: 150,
-    isPrivate: false,
-    visibility: 'public',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-14T14:30:00Z',
-    updatedAt: '2024-01-14T14:30:00Z',
-  },
-  {
-    _id: '3',
-    title: 'Python Data Structures',
-    author: 'Mike Johnson',
-    description: 'Comprehensive quiz on Python lists, dictionaries, sets, and tuples.',
-    tags: ['Python', 'Data Structures', 'Programming'],
-    maxPoints: 120,
-    isPrivate: true,
-    visibility: 'private',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-13T09:15:00Z',
-    updatedAt: '2024-01-13T09:15:00Z',
-  },
-  {
-    _id: '4',
-    title: 'CSS Grid and Flexbox',
-    author: 'Sarah Wilson',
-    description: 'Master modern CSS layout techniques with this comprehensive quiz.',
-    tags: ['CSS', 'Layout', 'Web Design'],
-    maxPoints: 90,
-    isPrivate: false,
-    visibility: 'public',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-12T16:45:00Z',
-    updatedAt: '2024-01-12T16:45:00Z',
-  },
-  {
-    _id: '5',
-    title: 'Node.js and Express',
-    author: 'David Brown',
-    description: 'Backend development quiz covering Node.js fundamentals and Express framework.',
-    tags: ['Node.js', 'Express', 'Backend'],
-    maxPoints: 110,
-    isPrivate: false,
-    visibility: 'selected',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-11T11:20:00Z',
-    updatedAt: '2024-01-11T11:20:00Z',
-  },
-  {
-    _id: '6',
-    title: 'Database Design Principles',
-    author: 'Lisa Garcia',
-    description: 'Fundamentals of database design, normalization, and relationships.',
-    tags: ['Database', 'SQL', 'Design'],
-    maxPoints: 130,
-    isPrivate: true,
-    visibility: 'private',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-10T13:30:00Z',
-    updatedAt: '2024-01-10T13:30:00Z',
-  },
-  {
-    _id: '7',
-    title: 'TypeScript Advanced Types',
-    author: 'Alex Chen',
-    description: 'Deep dive into TypeScript\'s advanced type system and generic programming.',
-    tags: ['TypeScript', 'Types', 'Programming'],
-    maxPoints: 140,
-    isPrivate: false,
-    visibility: 'public',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-09T08:45:00Z',
-    updatedAt: '2024-01-09T08:45:00Z',
-  },
-  {
-    _id: '8',
-    title: 'Machine Learning Basics',
-    author: 'Emma Davis',
-    description: 'Introduction to machine learning concepts and algorithms.',
-    tags: ['Machine Learning', 'AI', 'Data Science'],
-    maxPoints: 160,
-    isPrivate: false,
-    visibility: 'public',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-08T15:20:00Z',
-    updatedAt: '2024-01-08T15:20:00Z',
-  },
-  {
-    _id: '9',
-    title: 'Docker and Containerization',
-    author: 'Tom Anderson',
-    description: 'Learn Docker fundamentals and container orchestration.',
-    tags: ['Docker', 'DevOps', 'Containers'],
-    maxPoints: 100,
-    isPrivate: false,
-    visibility: 'selected',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-07T12:10:00Z',
-    updatedAt: '2024-01-07T12:10:00Z',
-  },
-  {
-    _id: '10',
-    title: 'Git Version Control',
-    author: 'Rachel Green',
-    description: 'Master Git commands and version control workflows.',
-    tags: ['Git', 'Version Control', 'Development'],
-    maxPoints: 80,
-    isPrivate: true,
-    visibility: 'private',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-06T14:55:00Z',
-    updatedAt: '2024-01-06T14:55:00Z',
-  },
-  {
-    _id: '11',
-    title: 'AWS Cloud Services',
-    author: 'Kevin Lee',
-    description: 'Comprehensive quiz on Amazon Web Services and cloud computing.',
-    tags: ['AWS', 'Cloud', 'DevOps'],
-    maxPoints: 180,
-    isPrivate: false,
-    visibility: 'public',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-05T10:30:00Z',
-    updatedAt: '2024-01-05T10:30:00Z',
-  },
-  {
-    _id: '12',
-    title: 'Cybersecurity Fundamentals',
-    author: 'Maria Rodriguez',
-    description: 'Essential cybersecurity concepts and best practices.',
-    tags: ['Security', 'Cybersecurity', 'IT'],
-    maxPoints: 120,
-    isPrivate: false,
-    visibility: 'public',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-04T09:45:00Z',
-    updatedAt: '2024-01-04T09:45:00Z',
-  },
-  {
-    _id: '13',
-    title: 'Agile and Scrum Methodology',
-    author: 'Chris Taylor',
-    description: 'Agile development principles and Scrum framework practices.',
-    tags: ['Agile', 'Scrum', 'Project Management'],
-    maxPoints: 95,
-    isPrivate: false,
-    visibility: 'selected',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-03T16:20:00Z',
-    updatedAt: '2024-01-03T16:20:00Z',
-  },
-  {
-    _id: '14',
-    title: 'REST API Design',
-    author: 'Anna White',
-    description: 'Best practices for designing and implementing RESTful APIs.',
-    tags: ['API', 'REST', 'Web Services'],
-    maxPoints: 110,
-    isPrivate: true,
-    visibility: 'private',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-02T11:15:00Z',
-    updatedAt: '2024-01-02T11:15:00Z',
-  },
-  {
-    _id: '15',
-    title: 'MongoDB and NoSQL',
-    author: 'James Wilson',
-    description: 'NoSQL database concepts with focus on MongoDB operations.',
-    tags: ['MongoDB', 'NoSQL', 'Database'],
-    maxPoints: 125,
-    isPrivate: false,
-    visibility: 'public',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2024-01-01T13:40:00Z',
-    updatedAt: '2024-01-01T13:40:00Z',
-  },
-  {
-    _id: '16',
-    title: 'Vue.js Composition API',
-    author: 'Sophie Martin',
-    description: 'Modern Vue.js development with Composition API and reactive programming.',
-    tags: ['Vue.js', 'Frontend', 'JavaScript'],
-    maxPoints: 105,
-    isPrivate: false,
-    visibility: 'public',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2023-12-31T15:25:00Z',
-    updatedAt: '2023-12-31T15:25:00Z',
-  },
-  {
-    _id: '17',
-    title: 'GraphQL Query Language',
-    author: 'Robert Clark',
-    description: 'GraphQL fundamentals, queries, mutations, and schema design.',
-    tags: ['GraphQL', 'API', 'Query Language'],
-    maxPoints: 135,
-    isPrivate: true,
-    visibility: 'private',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2023-12-30T10:50:00Z',
-    updatedAt: '2023-12-30T10:50:00Z',
-  },
-  {
-    _id: '18',
-    title: 'Mobile App Development',
-    author: 'Jennifer Adams',
-    description: 'Cross-platform mobile development concepts and frameworks.',
-    tags: ['Mobile', 'React Native', 'App Development'],
-    maxPoints: 150,
-    isPrivate: false,
-    visibility: 'selected',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2023-12-29T14:35:00Z',
-    updatedAt: '2023-12-29T14:35:00Z',
-  },
-  {
-    _id: '19',
-    title: 'Blockchain Technology',
-    author: 'Mark Thompson',
-    description: 'Blockchain fundamentals, cryptocurrencies, and smart contracts.',
-    tags: ['Blockchain', 'Cryptocurrency', 'Technology'],
-    maxPoints: 170,
-    isPrivate: false,
-    visibility: 'public',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2023-12-28T12:20:00Z',
-    updatedAt: '2023-12-28T12:20:00Z',
-  },
-  {
-    _id: '20',
-    title: 'UI/UX Design Principles',
-    author: 'Amy Parker',
-    description: 'User interface and user experience design best practices.',
-    tags: ['UI/UX', 'Design', 'User Experience'],
-    maxPoints: 90,
-    isPrivate: false,
-    visibility: 'public',
-    allowedUsers: [],
-    questions: [],
-    createdAt: '2023-12-27T16:10:00Z',
-    updatedAt: '2023-12-27T16:10:00Z',
-  },
-];
+import { quizApi } from '@/utils/api';
+import useSnackBarStore from '@/stores/useSnackBarStore';
+import useUserStore from '@/stores/useUserStore';
 
 const QuizzesPage = () => {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [tabValue, setTabValue] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const { showSnackbar } = useSnackBarStore();
+  const { user } = useUserStore();
 
-  // Combine all quiz data
-  const allQuizzes = [...getAllQuizzes(), ...additionalQuizzes.slice(3)];
-
-  // Simulate loading for 3 seconds
+  // Fetch quizzes from API
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000);
+    const fetchQuizzes = async () => {
+      try {
+        setIsLoading(true);
+        const response = await quizApi.getQuizzes();
+        
+        if (response.success && response.data) {
+          setQuizzes(response.data);
+        } else {
+          showSnackbar('Failed to load quizzes', 'error');
+        }
+      } catch (error: any) {
+        console.error('Error fetching quizzes:', error);
+        showSnackbar(
+          error.response?.data?.message || 'Error loading quizzes',
+          'error'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
-  }, []);
+    fetchQuizzes();
+  }, [showSnackbar]);
 
   const handleCreateQuiz = () => {
     router.push('/quizzes/create');
@@ -377,7 +112,7 @@ const QuizzesPage = () => {
     }
   };
 
-  const filteredQuizzes = allQuizzes.filter(quiz => {
+  const filteredQuizzes = quizzes.filter(quiz => {
     // Filter out selected quizzes entirely
     if (quiz.visibility === 'selected') {
       return false;
@@ -405,6 +140,15 @@ const QuizzesPage = () => {
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  // Check if current user owns the quiz
+  const isQuizOwner = (quiz: Quiz) => {
+    if (!user) return false;
+    
+    // Handle both string and object author types
+    const authorId = typeof quiz.author === 'string' ? quiz.author : quiz.author._id;
+    return authorId === user._id;
   };
 
   // Loading skeleton component
@@ -647,7 +391,7 @@ const QuizzesPage = () => {
                 {/* Quiz Info */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar sx={{ width: 24, height: 24, bgcolor: 'secondary.main', fontSize: '0.75rem' }}>
+                    <Avatar sx={{ width: 24, height: 24, bgcolor: 'secondary.main', fontSize: '0.75rem', color: 'primary.main' }}>
                       {typeof quiz.author === 'string' ? quiz.author.charAt(0) : quiz.author.name.charAt(0)}
                     </Avatar>
                     <Typography variant="caption" color="text.secondary">
@@ -675,20 +419,29 @@ const QuizzesPage = () => {
                 >
                   Take Quiz
                 </Button>
-                <IconButton
-                  size="small"
-                  onClick={() => handleEditQuiz(quiz._id)}
-                  sx={{ color: 'text.secondary' }}
-                >
-                  <EditIcon fontSize="small" />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => handleDeleteQuiz(quiz._id)}
-                  sx={{ color: 'error.main' }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+                {/* Only show edit/delete buttons for quiz owners */}
+                {isQuizOwner(quiz) && (
+                  <>
+                    <Tooltip title="Edit Quiz">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEditQuiz(quiz._id)}
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete Quiz">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeleteQuiz(quiz._id)}
+                        sx={{ color: 'error.main' }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </>
+                )}
               </CardActions>
             </Card>
           </Grid>

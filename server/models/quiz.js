@@ -32,14 +32,10 @@ const quizSchema = new Schema({
   },
   visibility: {
     type: String,
-    enum: ['private', 'public', 'selected'],
+    enum: ['private', 'public'],
     default: 'private',
     required: true
   },
-  allowedUsers: [{
-    type: Schema.Types.ObjectId,
-    ref: 'User'
-  }],
   questions: [questionSchema],
   createdAt: {
     type: Date,

@@ -27,8 +27,8 @@ const quizValidation = [
     .isLength({ min: 1, max: 30 })
     .withMessage('Each tag must be between 1 and 30 characters'),
   body('visibility')
-    .isIn(['private', 'public', 'selected'])
-    .withMessage('Visibility must be private, public, or selected'),
+    .isIn(['private', 'public'])
+    .withMessage('Visibility must be private or public'),
   body('questions')
     .isArray({ min: 1 })
     .withMessage('At least one question is required'),
@@ -51,7 +51,7 @@ const quizValidation = [
     .withMessage('isCorrect must be a boolean')
 ];
 
-// GET /api/quiz - Get all quizzes (with filters)
+// GET /api/quiz - Get all quizzes (with filters and proper access control)
 router.get('/', async (req, res) => {
   try {
     const { 
@@ -70,29 +70,87 @@ router.get('/', async (req, res) => {
     // Build filter object
     const filter = {};
 
-    // Search in title, description
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { tags: { $in: [new RegExp(search, 'i')] } }
-      ];
+    // Get user ID from token if available (optional authentication)
+    let currentUserId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7);
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.SECRET);
+        currentUserId = decoded._id;
+      } catch (error) {
+        // Invalid token, continue as unauthenticated user
+      }
     }
 
-    // Filter by visibility
+    // Apply privacy filtering based on user authentication
+    if (currentUserId) {
+      // Authenticated user can see:
+      // 1. All public quizzes
+      // 2. Their own private quizzes
+      filter.$or = [
+        { visibility: 'public' },
+        { author: currentUserId }
+      ];
+    } else {
+      // Unauthenticated user can only see public quizzes
+      filter.visibility = 'public';
+    }
+
+    // Search in title, description
+    if (search) {
+      const searchCondition = {
+        $or: [
+          { title: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+          { tags: { $in: [new RegExp(search, 'i')] } }
+        ]
+      };
+      
+      // Combine search with privacy filter
+      filter.$and = [{ $or: filter.$or || [{ visibility: 'public' }] }, searchCondition];
+      delete filter.$or;
+    }
+
+    // Filter by visibility (only if user has access)
     if (visibility && visibility !== 'all') {
-      filter.visibility = visibility;
+      if (currentUserId) {
+        // For authenticated users, apply additional visibility filter
+        const visibilityFilter = { visibility };
+        if (filter.$and) {
+          filter.$and.push(visibilityFilter);
+        } else if (filter.$or) {
+          filter.$and = [{ $or: filter.$or }, visibilityFilter];
+          delete filter.$or;
+        } else {
+          filter.visibility = visibility;
+        }
+      } else if (visibility === 'public') {
+        // Unauthenticated users can only filter for public
+        filter.visibility = 'public';
+      }
     }
 
     // Filter by tags
     if (tags) {
       const tagArray = tags.split(',').map(tag => tag.trim());
-      filter.tags = { $in: tagArray };
+      const tagsFilter = { tags: { $in: tagArray } };
+      if (filter.$and) {
+        filter.$and.push(tagsFilter);
+      } else {
+        filter.tags = { $in: tagArray };
+      }
     }
 
     // Filter by author
     if (author) {
-      filter.author = author;
+      const authorFilter = { author };
+      if (filter.$and) {
+        filter.$and.push(authorFilter);
+      } else {
+        filter.author = author;
+      }
     }
 
     // Get total count for pagination
@@ -101,7 +159,6 @@ router.get('/', async (req, res) => {
     // Get quizzes with pagination
     const quizzes = await Quiz.find(filter)
       .populate('author', 'name email')
-      .populate('allowedUsers', 'name email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum)
@@ -126,17 +183,41 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/quiz/:id - Get single quiz by ID
+// GET /api/quiz/:id - Get single quiz by ID with access control
 router.get('/:id', async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-      .populate('author', 'name email')
-      .populate('allowedUsers', 'name email');
+      .populate('author', 'name email');
 
     if (!quiz) {
       return res.status(404).json({
         success: false,
         message: 'Quiz not found'
+      });
+    }
+
+    // Get user ID from token if available
+    let currentUserId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7);
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.SECRET);
+        currentUserId = decoded._id;
+      } catch (error) {
+        // Invalid token, continue as unauthenticated user
+      }
+    }
+
+    // Check access permissions
+    const isPublic = quiz.visibility === 'public';
+    const isOwner = currentUserId && quiz.author._id.toString() === currentUserId;
+
+    if (!isPublic && !isOwner) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. You do not have permission to view this quiz.'
       });
     }
 
@@ -174,7 +255,7 @@ router.post('/', auth, quizValidation, async (req, res) => {
       });
     }
 
-    const { title, description, tags, visibility, questions, allowedUsers, category } = req.body;
+    const { title, description, tags, visibility, questions, category } = req.body;
 
     // Validate that each question has at least one correct answer
     for (let i = 0; i < questions.length; i++) {
@@ -203,8 +284,7 @@ router.post('/', auth, quizValidation, async (req, res) => {
       tags: tags || [],
       maxPoints,
       visibility,
-      questions,
-      allowedUsers: allowedUsers || []
+      questions
     };
 
     // Set isPrivate based on visibility for backward compatibility
@@ -275,7 +355,7 @@ router.put('/:id', auth, quizValidation, async (req, res) => {
       });
     }
 
-    const { title, description, tags, visibility, questions, allowedUsers } = req.body;
+    const { title, description, tags, visibility, questions } = req.body;
 
     // Validate that each question has at least one correct answer
     for (let i = 0; i < questions.length; i++) {
@@ -304,7 +384,6 @@ router.put('/:id', auth, quizValidation, async (req, res) => {
     quiz.isPrivate = visibility === 'private';
     quiz.questions = questions;
     quiz.maxPoints = maxPoints;
-    quiz.allowedUsers = allowedUsers || [];
     quiz.updatedAt = new Date();
 
     await quiz.save();
@@ -390,7 +469,7 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-// GET /api/quiz/user/:userId - Get quizzes by user
+// GET /api/quiz/user/:userId - Get quizzes by user with access control
 router.get('/user/:userId', async (req, res) => {
   try {
     const { page = 1, limit = 12 } = req.query;
@@ -398,7 +477,30 @@ router.get('/user/:userId', async (req, res) => {
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
-    const filter = { author: req.params.userId };
+    // Get user ID from token if available (optional authentication)
+    let currentUserId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7);
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.SECRET);
+        currentUserId = decoded._id;
+      } catch (error) {
+        // Invalid token, continue as unauthenticated user
+      }
+    }
+
+    // Apply access control filtering
+    const targetUserId = req.params.userId;
+    let filter = { author: targetUserId };
+    
+    // If viewing someone else's quizzes and not authenticated, show only public
+    if (!currentUserId || currentUserId !== targetUserId) {
+      // For other users or unauthenticated users, only show public quizzes
+      filter.visibility = 'public';
+    }
+    // If viewing own quizzes, no additional filtering needed - can see all
     
     const total = await Quiz.countDocuments(filter);
     
