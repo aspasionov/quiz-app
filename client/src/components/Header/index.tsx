@@ -72,7 +72,16 @@ function ResponsiveAppBar() {
   };
 
   return (
-    <AppBar position="static" sx={{ height: HEADER_HEIGHT }}>
+    <AppBar 
+      position="sticky" 
+      sx={{ 
+        height: HEADER_HEIGHT,
+        top: 0,
+        zIndex: 1100,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        backdropFilter: 'blur(10px)',
+      }}
+    >
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <Image

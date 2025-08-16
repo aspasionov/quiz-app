@@ -94,6 +94,16 @@ const predefinedTags = [
   // Testing & Quality
   'Jest', 'Cypress', 'Selenium', 'Unit Testing', 'Integration Testing', 'TDD', 'BDD',
   
+  // English Language & Literature
+  'English', 'Grammar', 'Vocabulary', 'Literature', 'Poetry', 'Shakespeare', 'Creative Writing', 'Essay Writing',
+  'Reading Comprehension', 'Spelling', 'Punctuation', 'Syntax', 'Phonetics', 'Linguistics', 'Etymology',
+  'American Literature', 'British Literature', 'World Literature', 'Modern Literature', 'Classical Literature',
+  'Short Stories', 'Novels', 'Drama', 'Theater', 'English Composition', 'Academic Writing', 'Business Writing',
+  'Technical Writing', 'Journalism', 'Rhetoric', 'Speech', 'Public Speaking', 'Debate', 'Language Arts',
+  'ESL', 'EFL', 'TOEFL', 'IELTS', 'SAT English', 'AP English', 'GRE Verbal', 'English as Second Language',
+  'English Proficiency', 'Language Learning', 'English Grammar Rules', 'Parts of Speech', 'Sentence Structure',
+  'Paragraph Writing', 'Proofreading', 'Editing', 'Style Guide', 'MLA', 'APA', 'Chicago Style',
+  
   // General Topics
   'Algorithms', 'Data Structures', 'Design Patterns', 'System Design', 'Security', 'Performance',
   
@@ -155,6 +165,8 @@ const CreateQuizPage = () => {
 
   // UI state
   const [saving, setSaving] = useState(false);
+  const [hasDraftData, setHasDraftData] = useState(false);
+  const [expandedAccordion, setExpandedAccordion] = useState<string | false>('question_1');
 
   // ID counter to ensure consistent IDs
   const [idCounter, setIdCounter] = useState(1);
@@ -216,6 +228,7 @@ const CreateQuizPage = () => {
         if (savedQuestions && Array.isArray(savedQuestions) && savedQuestions.length > 0) {
           setQuestions(savedQuestions);
           setIdCounter(savedIdCounter || 4);
+          setHasDraftData(true); // Mark that we have draft data
           
           // Restore form data
           if (savedFormData) {
@@ -232,6 +245,7 @@ const CreateQuizPage = () => {
     } catch (error) {
       console.warn('Failed to load quiz data from localStorage:', error);
     }
+    setHasDraftData(false); // No draft data available
     return false; // No data was loaded
   };
 
@@ -239,41 +253,115 @@ const CreateQuizPage = () => {
   const clearLocalStorage = () => {
     try {
       localStorage.removeItem(QUIZ_STORAGE_KEY);
+      setHasDraftData(false); // Update state to reflect no draft data
     } catch (error) {
       console.warn('Failed to clear localStorage:', error);
     }
   };
 
+  // Start fresh - clear all data and reset form
+  const startFresh = () => {
+    clearLocalStorage();
+    const firstQuestion = createEmptyQuestion(1);
+    setQuestions([firstQuestion]);
+    setIdCounter(4);
+    setActiveStep(0);
+    setExpandedAccordion(firstQuestion._id); // Auto-expand the first question
+    
+    // Reset form to default values
+    setValue('title', '');
+    setValue('description', '');
+    setValue('category', '');
+    setValue('visibility', 'public');
+    setValue('tags', []);
+    
+    // Update URL to remove step parameter
+    const url = new URL(window.location.href);
+    url.searchParams.delete('step');
+    url.searchParams.delete('fresh');
+    url.searchParams.delete('new');
+    router.replace(url.pathname, { scroll: false });
+  };
+
   // Initialize with one empty question on client side only
   useEffect(() => {
     if (!isInitialized) {
-      const dataLoaded = loadFromLocalStorage();
+      // Check if user wants to start fresh (no draft recovery)
+      const urlParams = new URLSearchParams(window.location.search);
+      const startFresh = urlParams.has('fresh') || urlParams.has('new');
+      
+      let dataLoaded = false;
+      if (!startFresh) {
+        dataLoaded = loadFromLocalStorage();
+      }
       
       if (!dataLoaded) {
-        // No saved data, create default question
-        setQuestions([createEmptyQuestion(1)]);
+        // No saved data or starting fresh, create default question
+        const firstQuestion = createEmptyQuestion(1);
+        setQuestions([firstQuestion]);
         setIdCounter(4); // Start from 4 for next items (1 question + 2 options = 3, so next starts at 4)
+        setExpandedAccordion(firstQuestion._id); // Auto-expand the first question
+        
+        // Reset form to default values if starting fresh
+        if (startFresh) {
+          setValue('title', '');
+          setValue('description', '');
+          setValue('category', '');
+          setValue('visibility', 'public');
+          setValue('tags', []);
+        }
+      } else {
+        // Data was loaded, expand the first question
+        if (questions.length > 0) {
+          setExpandedAccordion(questions[0]._id);
+        }
       }
       
       setIsInitialized(true);
     }
-  }, [isInitialized]);
+  }, [isInitialized, setValue, questions]);
 
   // Save to localStorage whenever questions or form data changes
   useEffect(() => {
     if (isInitialized) {
       saveToLocalStorage();
+      
+      // Remove fresh parameter from URL after user starts working (has content)
+      const hasContent = watchedValues.title?.trim() || 
+                        watchedValues.description?.trim() || 
+                        (watchedValues.tags && watchedValues.tags.length > 0) ||
+                        questions.some(q => q.questionText.trim() || q.options.some(opt => opt.text.trim()));
+      
+      if (hasContent) {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('fresh') || urlParams.has('new')) {
+          urlParams.delete('fresh');
+          urlParams.delete('new');
+          const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+          router.replace(newUrl, { scroll: false });
+        }
+      }
     }
-  }, [questions, watchedValues, activeStep, isInitialized]);
+  }, [questions, watchedValues, activeStep, isInitialized, router]);
 
   // Question management
   const handleAddQuestion = () => {
-    setQuestions([...questions, createEmptyQuestion()]);
+    const newQuestion = createEmptyQuestion();
+    setQuestions([...questions, newQuestion]);
+    // Auto-expand the newly added question
+    setExpandedAccordion(newQuestion._id);
   };
 
   const handleDeleteQuestion = (index: number) => {
     if (questions.length > 1) {
-      setQuestions(questions.filter((_, i) => i !== index));
+      const questionToDelete = questions[index];
+      const newQuestions = questions.filter((_, i) => i !== index);
+      setQuestions(newQuestions);
+      
+      // If we're deleting the expanded question, expand the first remaining question
+      if (expandedAccordion === questionToDelete._id) {
+        setExpandedAccordion(newQuestions.length > 0 ? newQuestions[0]._id : false);
+      }
     }
   };
 
@@ -691,7 +779,10 @@ const CreateQuizPage = () => {
               {questions.map((question, questionIndex) => (
                 <Accordion 
                   key={question._id} 
-                  defaultExpanded={questionIndex === 0}
+                  expanded={expandedAccordion === question._id}
+                  onChange={(event, isExpanded) => {
+                    setExpandedAccordion(isExpanded ? question._id : false);
+                  }}
                   sx={{ mb: 1, borderRadius: 2, '&:before': { display: 'none' } }}
                 >
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -932,15 +1023,37 @@ const CreateQuizPage = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-        <Tooltip title="Back to Quizzes">
-          <IconButton onClick={handleBackToQuizzes} sx={{ mr: 2 }}>
-            <ArrowBackIcon />
-          </IconButton>
-        </Tooltip>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
-          Create Quiz
-        </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Tooltip title="Back to Quizzes">
+            <IconButton onClick={handleBackToQuizzes} sx={{ mr: 2 }}>
+              <ArrowBackIcon />
+            </IconButton>
+          </Tooltip>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+            Create Quiz
+          </Typography>
+        </Box>
+        
+        {/* Show draft indicator and start fresh button if there's saved data */}
+        {hasDraftData && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Chip 
+              label="Draft recovered" 
+              size="small" 
+              color="info" 
+              variant="outlined"
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={startFresh}
+              sx={{ borderRadius: 2, textTransform: 'none' }}
+            >
+              Start Fresh
+            </Button>
+          </Box>
+        )}
       </Box>
 
       {/* Stepper */}

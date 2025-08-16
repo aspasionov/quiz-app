@@ -16,10 +16,6 @@ import {
   Chip,
   Avatar,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Divider,
   IconButton,
   Tooltip,
@@ -28,13 +24,13 @@ import {
   ArrowBack as ArrowBackIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
-  Quiz as QuizIcon,
   Timer as TimerIcon,
   Star as StarIcon,
 } from '@mui/icons-material';
 import { withAuth } from '@/components/WithAuth';
-import { getQuizById } from '@/data/mockQuizzes';
-import { Quiz, Question, Option } from '@/types';
+import { quizApi } from '@/utils/api';
+import { Quiz } from '@/types';
+import useSnackBarStore from '@/stores/useSnackBarStore';
 
 interface UserAnswer {
   questionId: string;
@@ -56,8 +52,10 @@ const QuizTakingPage = () => {
   const params = useParams();
   const router = useRouter();
   const quizId = params.id as string;
+  const { showSnackbar } = useSnackBarStore();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [loading, setLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
   const [selectedOption, setSelectedOption] = useState<string>('');
@@ -68,12 +66,34 @@ const QuizTakingPage = () => {
   const [showExplanation, setShowExplanation] = useState(false);
 
   useEffect(() => {
-    const foundQuiz = getQuizById(quizId);
-    if (foundQuiz) {
-      setQuiz(foundQuiz);
-      setStartTime(new Date());
-    }
-  }, [quizId]);
+    const fetchQuiz = async () => {
+      try {
+        setLoading(true);
+        const response = await quizApi.getQuiz(quizId);
+        
+        if (response.success && response.data) {
+          setQuiz(response.data);
+          setStartTime(new Date());
+        } else {
+          showSnackbar('Quiz not found', 'error');
+          router.push('/quizzes');
+        }
+      } catch (error: unknown) {
+        console.error('Error fetching quiz:', error);
+        let errorMessage = 'Error loading quiz';
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response?: { data?: { message?: string } } };
+          errorMessage = axiosError.response?.data?.message || 'Error loading quiz';
+        }
+        showSnackbar(errorMessage, 'error');
+        router.push('/quizzes');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuiz();
+  }, [quizId, showSnackbar, router]);
 
   useEffect(() => {
     if (startTime && !showResults) {
@@ -174,11 +194,21 @@ const QuizTakingPage = () => {
     return <CancelIcon />;
   };
 
+  if (loading) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Alert severity="info">
+          Loading quiz...
+        </Alert>
+      </Container>
+    );
+  }
+
   if (!quiz) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Alert severity="error">
-          Quiz not found or loading...
+          Quiz not found.
         </Alert>
       </Container>
     );
@@ -194,7 +224,7 @@ const QuizTakingPage = () => {
               <Chip
                 icon={getScoreIcon(quizResult.percentage)}
                 label={`${quizResult.percentage.toFixed(1)}%`}
-                color={getScoreColor(quizResult.percentage) as any}
+                color={getScoreColor(quizResult.percentage) as 'success' | 'warning' | 'error'}
                 size="large"
                 sx={{ 
                   fontSize: '1.2rem', 
@@ -243,7 +273,7 @@ const QuizTakingPage = () => {
               <LinearProgress
                 variant="determinate"
                 value={quizResult.percentage}
-                color={getScoreColor(quizResult.percentage) as any}
+                color={getScoreColor(quizResult.percentage) as 'success' | 'warning' | 'error'}
                 sx={{ 
                   height: 12, 
                   borderRadius: 6, 
@@ -265,7 +295,7 @@ const QuizTakingPage = () => {
               )}
               {quizResult.percentage >= 60 && quizResult.percentage < 80 && (
                 <Alert severity="warning" sx={{ borderRadius: 2 }}>
-                  <strong>Good job!</strong> You're on the right track, but there's room for improvement.
+                  <strong>Good job!</strong> You&apos;re on the right track, but there&apos;s room for improvement.
                 </Alert>
               )}
               {quizResult.percentage < 60 && (
