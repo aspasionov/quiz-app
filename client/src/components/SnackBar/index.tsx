@@ -16,9 +16,6 @@ export default function SnackBar() {
         //   backgroundColor: SECOND_COLOR,
         //   color: MAIN_COLOR,
         // }
-        "&.MuiSnackbar-root": {
-          top: 80
-        }
       }}
       autoHideDuration={6000}
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}

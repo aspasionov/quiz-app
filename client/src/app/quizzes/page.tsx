@@ -21,6 +21,11 @@ import {
   Tooltip,
   CircularProgress,
   Skeleton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -45,6 +50,9 @@ const QuizzesPage = () => {
   const [tabValue, setTabValue] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [quizToDelete, setQuizToDelete] = useState<Quiz | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { showSnackbar } = useSnackBarStore();
   const { user } = useUserStore();
 
@@ -75,7 +83,7 @@ const QuizzesPage = () => {
   }, [showSnackbar]);
 
   const handleCreateQuiz = () => {
-    router.push('/quizzes/create');
+    router.push('/quizzes/create?fresh=true');
   };
 
   const handlePlayQuiz = (quizId: string) => {
@@ -87,7 +95,51 @@ const QuizzesPage = () => {
   };
 
   const handleDeleteQuiz = (quizId: string) => {
-    console.log('Deleting quiz:', quizId);
+    const quiz = quizzes.find(q => q._id === quizId);
+    if (quiz) {
+      setQuizToDelete(quiz);
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const confirmDeleteQuiz = async () => {
+    if (!quizToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await quizApi.deleteQuiz(quizToDelete._id);
+      
+      if (response.success) {
+        // Remove quiz from local state
+        setQuizzes(prevQuizzes => prevQuizzes.filter(q => q._id !== quizToDelete._id));
+        showSnackbar('Quiz deleted successfully!', 'success');
+      } else {
+        throw new Error(response.message || 'Failed to delete quiz');
+      }
+    } catch (error: any) {
+      console.error('Error deleting quiz:', error);
+      
+      if (error.response?.status === 401) {
+        showSnackbar('You need to be logged in to delete quizzes.', 'error');
+        router.push('/login');
+      } else if (error.response?.status === 403) {
+        showSnackbar('You can only delete your own quizzes.', 'error');
+      } else {
+        showSnackbar(
+          error.response?.data?.message || 'Error deleting quiz. Please try again.',
+          'error'
+        );
+      }
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setQuizToDelete(null);
+    }
+  };
+
+  const cancelDeleteQuiz = () => {
+    setDeleteDialogOpen(false);
+    setQuizToDelete(null);
   };
 
   const getVisibilityIcon = (visibility: string) => {
@@ -469,6 +521,44 @@ const QuizzesPage = () => {
           </Typography>
         </Box>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={cancelDeleteQuiz}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Delete Quiz
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete <strong>"{quizToDelete?.title}"</strong>?
+            This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 2 }}>
+          <Button
+            onClick={cancelDeleteQuiz}
+            variant="outlined"
+            sx={{ borderRadius: 2, textTransform: 'none' }}
+            disabled={isDeleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDeleteQuiz}
+            variant="contained"
+            color="error"
+            sx={{ borderRadius: 2, textTransform: 'none' }}
+            disabled={isDeleting}
+            startIcon={isDeleting ? <CircularProgress size={16} /> : <DeleteIcon />}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete Quiz'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
