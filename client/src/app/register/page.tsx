@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -88,6 +89,28 @@ export default function RegisterScreen() {
           >
             Sign Up
           </Button>
+        </Box>
+        
+        {/* Login guidance */}
+        <Box sx={{ mt: 2, textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary">
+            Already have an account?
+          </Typography>
+          <Link href="/login" style={{ textDecoration: 'none' }}>
+            <Typography 
+              variant="body2" 
+              color="primary"
+              sx={{ 
+                mt: 0.5,
+                cursor: 'pointer',
+                '&:hover': {
+                  textDecoration: 'underline'
+                }
+              }}
+            >
+              Sign in here
+            </Typography>
+          </Link>
         </Box>
       </Container>
     </Stack>
