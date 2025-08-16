@@ -194,6 +194,7 @@ const QuizTakingPage = () => {
     return <CancelIcon />;
   };
 
+
   if (loading) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
@@ -467,18 +468,6 @@ const QuizTakingPage = () => {
         </Button>
       </Box>
 
-      {/* Quiz Tags */}
-      <Box sx={{ mt: 4, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-        {quiz.tags.map((tag, index) => (
-          <Chip
-            key={index}
-            label={tag}
-            size="small"
-            variant="outlined"
-            sx={{ borderRadius: 2 }}
-          />
-        ))}
-      </Box>
     </Container>
   );
 };

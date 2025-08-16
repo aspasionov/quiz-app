@@ -48,7 +48,7 @@ import {
 } from '@mui/icons-material';
 import { withAuth } from '@/components/WithAuth';
 import { Question, Option } from '@/types';
-import { quizApi, CreateQuizData } from '@/utils/api';
+import { quizApi, CreateQuizData, tagApi, Tag } from '@/utils/api';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 import { QUIZ_STORAGE_KEY } from '@/constans';
 
@@ -70,56 +70,6 @@ const quizInfoSchema = z.object({
 });
 
 type QuizInfoFormData = z.infer<typeof quizInfoSchema>;
-
-// Predefined tag suggestions
-const predefinedTags = [
-  // Programming Languages
-  'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'PHP', 'Ruby', 'Go', 'Rust', 'Swift', 'Kotlin',
-  
-  // Web Development
-  'HTML', 'CSS', 'React', 'Vue.js', 'Angular', 'Node.js', 'Express', 'Next.js', 'Nuxt.js', 'Webpack', 'Vite',
-  
-  // Backend & Databases
-  'MongoDB', 'PostgreSQL', 'MySQL', 'Redis', 'GraphQL', 'REST API', 'Microservices', 'Docker', 'Kubernetes',
-  
-  // Cloud & DevOps
-  'AWS', 'Azure', 'Google Cloud', 'Firebase', 'Heroku', 'Netlify', 'Vercel', 'CI/CD', 'Git', 'GitHub',
-  
-  // Data & AI
-  'Machine Learning', 'Data Science', 'TensorFlow', 'PyTorch', 'Pandas', 'NumPy', 'Jupyter', 'SQL',
-  
-  // Mobile Development
-  'React Native', 'Flutter', 'iOS', 'Android', 'Xamarin', 'Ionic',
-  
-  // Testing & Quality
-  'Jest', 'Cypress', 'Selenium', 'Unit Testing', 'Integration Testing', 'TDD', 'BDD',
-  
-  // English Language & Literature
-  'English', 'Grammar', 'Vocabulary', 'Literature', 'Poetry', 'Shakespeare', 'Creative Writing', 'Essay Writing',
-  'Reading Comprehension', 'Spelling', 'Punctuation', 'Syntax', 'Phonetics', 'Linguistics', 'Etymology',
-  'American Literature', 'British Literature', 'World Literature', 'Modern Literature', 'Classical Literature',
-  'Short Stories', 'Novels', 'Drama', 'Theater', 'English Composition', 'Academic Writing', 'Business Writing',
-  'Technical Writing', 'Journalism', 'Rhetoric', 'Speech', 'Public Speaking', 'Debate', 'Language Arts',
-  'ESL', 'EFL', 'TOEFL', 'IELTS', 'SAT English', 'AP English', 'GRE Verbal', 'English as Second Language',
-  'English Proficiency', 'Language Learning', 'English Grammar Rules', 'Parts of Speech', 'Sentence Structure',
-  'Paragraph Writing', 'Proofreading', 'Editing', 'Style Guide', 'MLA', 'APA', 'Chicago Style',
-  
-  // General Topics
-  'Algorithms', 'Data Structures', 'Design Patterns', 'System Design', 'Security', 'Performance',
-  
-  // Difficulty Levels
-  'Beginner', 'Intermediate', 'Advanced', 'Expert',
-  
-  // Categories
-  'Frontend', 'Backend', 'Full Stack', 'DevOps', 'Mobile', 'Game Development', 'Cybersecurity',
-  
-  // Methodologies
-  'Agile', 'Scrum', 'Kanban', 'Waterfall', 'Lean',
-  
-  // Soft Skills
-  'Problem Solving', 'Critical Thinking', 'Communication', 'Leadership', 'Teamwork'
-];
-
 const CreateQuizPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -162,6 +112,10 @@ const CreateQuizPage = () => {
   // Questions
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Tags from database
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
 
   // UI state
   const [saving, setSaving] = useState(false);
@@ -254,6 +208,7 @@ const CreateQuizPage = () => {
     try {
       localStorage.removeItem(QUIZ_STORAGE_KEY);
       setHasDraftData(false); // Update state to reflect no draft data
+      console.log('✅ localStorage cleared successfully');
     } catch (error) {
       console.warn('Failed to clear localStorage:', error);
     }
@@ -283,6 +238,33 @@ const CreateQuizPage = () => {
     router.replace(url.pathname, { scroll: false });
   };
 
+  // Load tags from database
+  useEffect(() => {
+    const loadTags = async () => {
+      try {
+        setIsLoadingTags(true);
+        const response = await tagApi.getTags({ limit: 1000, sortBy: 'name', sortOrder: 'asc' });
+        
+        if (response.success && response.data) {
+          // Extract tag names from the response
+          const tagNames = response.data.map((tag: Tag) => tag.name);
+          setAvailableTags(tagNames);
+        } else {
+          // Fallback to empty array if API fails
+          setAvailableTags([]);
+          console.warn('Failed to load tags from database');
+        }
+      } catch (error) {
+        console.error('Error loading tags:', error);
+        // Fallback to empty array on error
+        setAvailableTags([]);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+
+    loadTags();
+  }, []);
   // Initialize with one empty question on client side only
   useEffect(() => {
     if (!isInitialized) {
@@ -347,9 +329,24 @@ const CreateQuizPage = () => {
   // Question management
   const handleAddQuestion = () => {
     const newQuestion = createEmptyQuestion();
-    setQuestions([...questions, newQuestion]);
+    const newQuestions = [...questions, newQuestion];
+    setQuestions(newQuestions);
+    
     // Auto-expand the newly added question
     setExpandedAccordion(newQuestion._id);
+    
+    // Auto-scroll to the newly added question after a short delay
+    setTimeout(() => {
+      const newQuestionIndex = newQuestions.length - 1;
+      const newQuestionElement = document.getElementById(`question-${newQuestionIndex}`);
+      if (newQuestionElement) {
+        newQuestionElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }, 100); // Small delay to ensure the DOM is updated
   };
 
   const handleDeleteQuestion = (index: number) => {
@@ -425,6 +422,29 @@ const CreateQuizPage = () => {
     }, 0);
   };
 
+  // Check if a question is valid
+  const isQuestionValid = (question: Question) => {
+    return (
+      question.questionText.trim() !== '' &&
+      question.questionText.trim().length >= 5 &&
+      question.options.every(opt => opt.text.trim() !== '') &&
+      question.options.some(opt => opt.isCorrect)
+    );
+  };
+
+  // Handle accordion expansion with validation check
+  const handleAccordionChange = (questionId: string, isExpanded: boolean) => {
+    if (!isExpanded) {
+      // If trying to collapse, check if the question is valid
+      const question = questions.find(q => q._id === questionId);
+      if (question && !isQuestionValid(question)) {
+        // Don't allow collapsing invalid questions
+        return;
+      }
+    }
+    setExpandedAccordion(isExpanded ? questionId : false);
+  };
+
   // Validation
   const validateStep = (step: number) => {
     switch (step) {
@@ -433,6 +453,7 @@ const CreateQuizPage = () => {
       case 1: // Questions
         return questions.every(q => 
           q.questionText.trim() !== '' &&
+          q.questionText.trim().length >= 5 &&
           q.options.every(opt => opt.text.trim() !== '') &&
           q.options.some(opt => opt.isCorrect)
         );
@@ -454,6 +475,29 @@ const CreateQuizPage = () => {
     router.replace(url.pathname + url.search, { scroll: false });
   };
 
+  // Expand all invalid questions
+  const expandInvalidQuestions = () => {
+    const invalidQuestions = questions.filter(q => !isQuestionValid(q));
+    if (invalidQuestions.length > 0) {
+      // If there are invalid questions, expand the first one
+      // (we can only expand one at a time with accordion)
+      setExpandedAccordion(invalidQuestions[0]._id);
+      
+      // Scroll to the first invalid question
+      setTimeout(() => {
+        const firstInvalidIndex = questions.findIndex(q => q._id === invalidQuestions[0]._id);
+        const invalidQuestionElement = document.getElementById(`question-${firstInvalidIndex}`);
+        if (invalidQuestionElement) {
+          invalidQuestionElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
+    }
+  };
+
   // Navigation
   const handleNext = async () => {
     if (activeStep === 0) {
@@ -471,6 +515,8 @@ const CreateQuizPage = () => {
       setActiveStep(nextStep);
       updateUrlStep(nextStep);
     } else {
+      // Validation failed - expand invalid questions and show warning
+      expandInvalidQuestions();
       showSnackbar(getValidationMessage(activeStep), 'warning');
     }
   };
@@ -495,6 +541,29 @@ const CreateQuizPage = () => {
         }
         return 'Please complete all required fields';
       case 1:
+        // Check for specific validation issues
+        const invalidQuestion = questions.find(q => 
+          q.questionText.trim() === '' || 
+          q.questionText.trim().length < 5 ||
+          !q.options.every(opt => opt.text.trim() !== '') ||
+          !q.options.some(opt => opt.isCorrect)
+        );
+        
+        if (invalidQuestion) {
+          if (invalidQuestion.questionText.trim() === '') {
+            return 'All questions must have text';
+          }
+          if (invalidQuestion.questionText.trim().length < 5) {
+            return 'Question text must be at least 5 characters long';
+          }
+          if (!invalidQuestion.options.every(opt => opt.text.trim() !== '')) {
+            return 'All answer options must have text';
+          }
+          if (!invalidQuestion.options.some(opt => opt.isCorrect)) {
+            return 'Each question must have at least one correct answer';
+          }
+        }
+        
         return 'Please complete all questions with valid options and correct answers';
       default:
         return 'Please complete all required fields';
@@ -535,9 +604,10 @@ const CreateQuizPage = () => {
       const response = await quizApi.createQuiz(quizData);
       
       if (response.success) {
-        // Clear localStorage after successful submission
-        clearLocalStorage();
         showSnackbar('Quiz created successfully!', 'success');
+        
+        // Clear localStorage and redirect to quizzes page
+        clearLocalStorage();
         router.push('/quizzes');
       } else {
         throw new Error(response.message || 'Failed to create quiz');
@@ -672,8 +742,9 @@ const CreateQuizPage = () => {
                       multiple
                       freeSolo
                       size="small"
-                      options={predefinedTags}
+                      options={availableTags}
                       value={field.value || []}
+                      loading={isLoadingTags}
                       onChange={(event, value) => {
                         const newTags = value.map(tag => 
                           typeof tag === 'string' && tag.startsWith('Create "') 
@@ -703,7 +774,7 @@ const CreateQuizPage = () => {
                         <TextField
                           {...params}
                           label="Tags"
-                          placeholder="Type to search or create tags..."
+                          placeholder={isLoadingTags ? "Loading tags..." : "Type to search or create tags..."}
                           error={!!fieldState.error}
                           helperText={fieldState.error?.message || 'Add at least 1 tag to describe your quiz'}
                           sx={{
@@ -759,31 +830,32 @@ const CreateQuizPage = () => {
         return (
           <Card elevation={2} sx={{ borderRadius: 3 }}>
             <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <QuestionIcon sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Questions ({questions.length})
-                  </Typography>
-                </Box>
-                <Button
-                  variant="outlined"
-                  startIcon={<AddIcon />}
-                  onClick={handleAddQuestion}
-                  sx={{ borderRadius: 2, textTransform: 'none' }}
-                >
-                  Add Question
-                </Button>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <QuestionIcon sx={{ mr: 1, color: 'primary.main' }} />
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Questions ({questions.length})
+                </Typography>
               </Box>
 
               {questions.map((question, questionIndex) => (
                 <Accordion 
-                  key={question._id} 
+                  key={question._id}
+                  id={`question-${questionIndex}`}
                   expanded={expandedAccordion === question._id}
                   onChange={(event, isExpanded) => {
-                    setExpandedAccordion(isExpanded ? question._id : false);
+                    handleAccordionChange(question._id, isExpanded);
                   }}
-                  sx={{ mb: 1, borderRadius: 2, '&:before': { display: 'none' } }}
+                  sx={{ 
+                    mb: 1, 
+                    borderRadius: 2, 
+                    '&:before': { display: 'none' },
+                    // Add visual indicator for invalid questions
+                    ...(expandedAccordion === question._id && !isQuestionValid(question) && {
+                      border: '2px solid',
+                      borderColor: 'warning.main',
+                      backgroundColor: 'warning.50'
+                    })
+                  }}
                 >
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', mr: 2 }}>
@@ -816,6 +888,12 @@ const CreateQuizPage = () => {
                         multiline
                         rows={2}
                         placeholder="Enter your question here..."
+                        error={question.questionText.trim() !== '' && question.questionText.trim().length < 5}
+                        helperText={
+                          question.questionText.trim() !== '' && question.questionText.trim().length < 5
+                            ? `Question must be at least 5 characters (${question.questionText.trim().length}/5)`
+                            : `${question.questionText.length} characters`
+                        }
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                       />
 
@@ -910,6 +988,29 @@ const CreateQuizPage = () => {
                   </AccordionDetails>
                 </Accordion>
               ))}
+
+              {/* Add Question Button - Below all questions */}
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddQuestion}
+                  sx={{ 
+                    borderRadius: 2, 
+                    textTransform: 'none',
+                    px: 4,
+                    py: 1.5,
+                    fontWeight: 600,
+                    boxShadow: 2,
+                    '&:hover': {
+                      boxShadow: 4
+                    }
+                  }}
+                >
+                  Add Question
+                </Button>
+              </Box>
             </CardContent>
           </Card>
         );
