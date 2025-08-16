@@ -11,13 +11,16 @@ export default function SnackBar() {
   return (
     <Snackbar
       open={open}
-      // sx={{
-      //   '& .MuiPaper-root': {
-      //     backgroundColor: SECOND_COLOR,
-      //     color: MAIN_COLOR,
-      //   }
-      // }}
-      // autoHideDuration={6000}
+      sx={{
+        // '& .MuiPaper-root': {
+        //   backgroundColor: SECOND_COLOR,
+        //   color: MAIN_COLOR,
+        // }
+        "&.MuiSnackbar-root": {
+          top: 80
+        }
+      }}
+      autoHideDuration={6000}
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       onClose={closeSnackbar}
     >

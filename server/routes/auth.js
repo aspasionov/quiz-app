@@ -118,4 +118,22 @@ router.post('/register', registerValidator, async (req, res) => {
   }
 })
 
+// Logout route
+router.post('/logout', checkAuth, async (req, res) => {
+  try {
+    // In a stateless JWT implementation, logout is primarily handled client-side
+    // by removing the token from localStorage. This endpoint acknowledges the logout.
+    // In future implementations, you could add token blacklisting here.
+    
+    res.status(200).json({
+      message: 'Logged out successfully'
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      message: 'Error during logout'
+    });
+  }
+});
+
 module.exports = router;

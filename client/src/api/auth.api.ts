@@ -16,6 +16,13 @@ export const registerUser = async (data: User) => {
   return response.data;
 };
 
+export const loginUser = async (email: string, password: string) => {
+  const response = await api.post('auth/login', { email, password });
+  // Server returns data directly with token included
+  setCredentials(response.data);
+  return response.data;
+};
+
 export const getUser = async () => {
   const response = await api.get('auth/me');
   setCredentials(response.data);
