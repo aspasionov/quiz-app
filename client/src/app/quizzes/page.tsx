@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Box,
   Button,
@@ -46,6 +46,7 @@ import useUserStore from '@/stores/useUserStore';
 
 const QuizzesPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [tabValue, setTabValue] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,6 +56,40 @@ const QuizzesPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const { showSnackbar } = useSnackBarStore();
   const { user } = useUserStore();
+
+  // Tab mapping
+  const tabNames = ['all', 'public', 'private', 'my'];
+  const getTabIndexFromName = (name: string) => {
+    const index = tabNames.indexOf(name);
+    return index >= 0 ? index : 0;
+  };
+  const getTabNameFromIndex = (index: number) => {
+    return tabNames[index] || 'all';
+  };
+
+  // Initialize tab from URL on component mount
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab) {
+      const tabIndex = getTabIndexFromName(urlTab);
+      setTabValue(tabIndex);
+    }
+  }, [searchParams]);
+
+  // Update URL when tab changes
+  const handleTabChange = (newValue: number) => {
+    setTabValue(newValue);
+    const tabName = getTabNameFromIndex(newValue);
+    const url = new URL(window.location.href);
+    
+    if (tabName === 'all') {
+      url.searchParams.delete('tab');
+    } else {
+      url.searchParams.set('tab', tabName);
+    }
+    
+    router.replace(url.pathname + url.search, { scroll: false });
+  };
 
   // Fetch quizzes from API
   useEffect(() => {
@@ -164,6 +199,15 @@ const QuizzesPage = () => {
     }
   };
 
+  // Check if current user owns the quiz
+  const isQuizOwner = (quiz: Quiz) => {
+    if (!user) return false;
+    
+    // Handle both string and object author types
+    const authorId = typeof quiz.author === 'string' ? quiz.author : quiz.author._id;
+    return authorId === user._id;
+  };
+
   const filteredQuizzes = quizzes.filter(quiz => {
     // Filter out selected quizzes entirely
     if (quiz.visibility === 'selected') {
@@ -181,6 +225,8 @@ const QuizzesPage = () => {
         return matchesSearch && quiz.visibility === 'public';
       case 2: // Private quizzes
         return matchesSearch && quiz.visibility === 'private';
+      case 3: // My quizzes
+        return matchesSearch && isQuizOwner(quiz);
       default:
         return matchesSearch;
     }
@@ -192,15 +238,6 @@ const QuizzesPage = () => {
       month: 'short',
       day: 'numeric',
     });
-  };
-
-  // Check if current user owns the quiz
-  const isQuizOwner = (quiz: Quiz) => {
-    if (!user) return false;
-    
-    // Handle both string and object author types
-    const authorId = typeof quiz.author === 'string' ? quiz.author : quiz.author._id;
-    return authorId === user._id;
   };
 
   // Loading skeleton component
@@ -349,12 +386,13 @@ const QuizzesPage = () => {
         {/* Filter Tabs */}
         <Tabs
           value={tabValue}
-          onChange={(_, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => handleTabChange(newValue)}
           sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
           <Tab label="All Quizzes" />
           <Tab label="Public" />
           <Tab label="Private" />
+          <Tab label="My" />
         </Tabs>
       </Box>
 
