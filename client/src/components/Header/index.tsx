@@ -28,8 +28,8 @@ import { authApi } from '@/utils/api';
 
 
 
-const authenticatedPages = ['quizzes', 'about'];
-const unauthenticatedPages = ['login', 'register', 'about'];
+const authenticatedPages = ['quizzes'];
+const unauthenticatedPages = ['login', 'register'];
 
 function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
@@ -84,13 +84,15 @@ function ResponsiveAppBar() {
     >
       <Container maxWidth="xl">
         <Toolbar disableGutters>
-          <Image
-            src="/logo.svg"
-            alt="logo"
-            width={40}
-            height={40}
-            style={{ marginRight: '8px' }}
-          />
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <Image
+              src="/logo.svg"
+              alt="logo"
+              width={40}
+              height={40}
+              style={{ marginRight: '8px', cursor: 'pointer' }}
+            />
+          </Link>
           <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
             <IconButton
               size="large"
@@ -120,8 +122,10 @@ function ResponsiveAppBar() {
             >
               {pages.map((page) => (
                 <MenuItem key={page} onClick={handleCloseNavMenu}>
-                  <Link href={`/${page}`}>
-                    <Typography sx={{ textAlign: 'center' }}>{page}</Typography>
+                  <Link href={`/${page}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
+                    <Typography sx={{ textAlign: 'left', textTransform: 'capitalize', py: 0.5 }}>
+                      {page}
+                    </Typography>
                   </Link>
                 </MenuItem>
               ))}
