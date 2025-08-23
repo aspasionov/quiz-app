@@ -29,7 +29,7 @@ import { authApi } from '@/utils/api';
 
 
 const authenticatedPages = ['quizzes'];
-const unauthenticatedPages = ['login', 'register'];
+const unauthenticatedPages = ['login']; // Only login since register redirects to login
 
 function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);

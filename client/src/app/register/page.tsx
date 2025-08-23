@@ -1,118 +1,84 @@
 'use client'
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-
-import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
+import React from 'react';
+import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Container from '@mui/material/Container';
-import * as z from 'zod';
-
-import { HEADER_HEIGHT } from '@/constans';
-import { RegisterSchema } from '@/validations';
-import { registerUser } from '@/api/auth.api';
-
-type FormData = z.infer<typeof RegisterSchema>;
-
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 export default function RegisterScreen() {
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormData>({
-    resolver: zodResolver(RegisterSchema),
-  });
-  const router = useRouter();
-
-
-
-  const onSubmit = async (data: FormData) => {
-    try {
-      await registerUser(data)
-      router.push('/quizzes');
-    } catch(err) {
-      console.log('error', err)
-    }
-  };
-
   return (
-    <Stack justifyContent="center" alignItems="center" minHeight={`calc(100vh - ${HEADER_HEIGHT}px)`}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        py: 4,
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      }}
+    >
       <Container component="main" maxWidth="sm">
-      <Typography component="h1" variant="h5" textAlign='center'>
-          Sign up
-        </Typography>
-        <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 1 }}>
-        <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="name"
-            label="Name"
-            {...register('name')}
-            error={!!errors.name}
-            helperText={errors.name?.message}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Email Address"
-            {...register('email')}
-            error={!!errors.email}
-            helperText={errors.email?.message}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Password"
-            type="password"
-            id="password"
-            {...register('password')}
-            error={!!errors.password}
-            helperText={errors.password?.message}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            size='large'
-            sx={{ mt: 3 }}
-          >
-            Sign Up
-          </Button>
-        </Box>
-        
-        {/* Login guidance */}
-        <Box sx={{ mt: 2, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            Already have an account?
-          </Typography>
-          <Link href="/login" style={{ textDecoration: 'none' }}>
-            <Typography 
-              variant="body2" 
-              color="primary"
-              sx={{ 
-                mt: 0.5,
-                cursor: 'pointer',
-                '&:hover': {
-                  textDecoration: 'underline'
-                }
+        <Card 
+          elevation={8}
+          sx={{ 
+            borderRadius: 4,
+            backdropFilter: 'blur(10px)',
+            backgroundColor: 'rgba(255, 255, 255, 0.9)'
+          }}
+        >
+          <CardContent sx={{ p: 6 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center'
               }}
             >
-              Sign in here
-            </Typography>
-          </Link>
-        </Box>
+              {/* App Title */}
+              <Typography 
+                component="h1" 
+                variant="h3" 
+                sx={{ 
+                  fontWeight: 'bold',
+                  mb: 1,
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  color: 'transparent'
+                }}
+              >
+                Quiz App
+              </Typography>
+              
+              <Typography 
+                variant="h6" 
+                color="text.secondary" 
+                sx={{ mb: 4 }}
+              >
+                Join thousands of learners worldwide
+              </Typography>
+              
+              {/* Google Sign-In Button */}
+              <Box sx={{ width: '100%', maxWidth: 300 }}>
+                <GoogleSignInButton mode="register" size="large" />
+              </Box>
+              
+              {/* Info Text */}
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                sx={{ mt: 3, maxWidth: 400, lineHeight: 1.6 }}
+              >
+                By signing up, you agree to our Terms of Service and Privacy Policy. 
+                Authentication is secure and powered by Google.
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
       </Container>
-    </Stack>
-  )
+    </Box>
+  );
 }
