@@ -9,7 +9,11 @@ const userSchema = new Schema ({
   name: String,
   password: {
     type: String,
-    required: true
+    required: false // Password is now completely optional since we only use Google OAuth
+  },
+  googleId: {
+    type: String,
+    sparse: true // Allows null values but keeps uniqueness for non-null values
   },
   roles: {
     type: [{

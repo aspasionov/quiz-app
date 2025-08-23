@@ -173,34 +173,6 @@ export const quizApi = {
 
 // Auth API functions
 export const authApi = {
-  // Login
-  login: async (email: string, password: string): Promise<any> => {
-    const response = await api.post('/auth/login', {
-      email,
-      password,
-    });
-    
-    // Server returns data directly, not wrapped in ApiResponse format
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-    }
-    
-    return {
-      success: true,
-      data: response.data
-    };
-  },
-
-  // Register
-  register: async (userData: { name: string; email: string; password: string }): Promise<ApiResponse<{ token: string; user: any }>> => {
-    const response: AxiosResponse<ApiResponse<{ token: string; user: any }>> = await api.post('/auth/register', userData);
-    
-    if (response.data.success && response.data.data?.token) {
-      localStorage.setItem('token', response.data.data.token);
-    }
-    
-    return response.data;
-  },
 
   // Logout
   logout: async (): Promise<ApiResponse<{ message: string }>> => {

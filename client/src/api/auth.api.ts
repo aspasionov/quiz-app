@@ -25,6 +25,12 @@ export const loginUser = async (email: string, password: string) => {
 
 export const getUser = async () => {
   const response = await api.get('auth/me');
-  setCredentials(response.data);
-  return response.data;
+  // The server now returns {success: true, data: userData} format
+  if (response.data.success && response.data.data) {
+    const userData = response.data.data;
+    const { setUser } = useUserStore.getState();
+    setUser(userData);
+    return userData;
+  }
+  throw new Error('Failed to get user data');
 };

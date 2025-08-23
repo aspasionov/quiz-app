@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
+const googleAuthRoutes = require('./routes/google-auth');
 const quizRoutes = require('./routes/quiz');
 const tagRoutes = require('./routes/tag');
 const path = require('path');
@@ -20,6 +21,7 @@ app.use(cors({
 
 
 app.use('/auth', authRoutes)
+app.use('/auth', googleAuthRoutes)
 app.use('/api/quiz', quizRoutes)
 app.use('/api/tags', tagRoutes)
 
