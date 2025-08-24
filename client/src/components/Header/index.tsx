@@ -101,6 +101,150 @@ function ResponsiveAppBar() {
     }
   };
 
+  // Prevent hydration mismatch by not rendering conditional styles on first render
+  if (!isClient) {
+    // Return a basic version without active page highlighting during SSR
+    return (
+      <AppBar 
+        position="sticky" 
+        sx={{ 
+          height: HEADER_HEIGHT,
+          top: 0,
+          zIndex: 1100,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          backdropFilter: 'blur(10px)',
+        }}
+      >
+        <Container maxWidth="xl">
+          <Toolbar disableGutters>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+              <Image
+                src="/logo.svg"
+                alt="logo"
+                width={40}
+                height={40}
+                style={{ marginRight: '8px', cursor: 'pointer' }}
+              />
+            </Link>
+            <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
+              <IconButton
+                size="large"
+                aria-label="account of current user"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleOpenNavMenu}
+                color="inherit"
+              >
+                <MenuIcon />
+              </IconButton>
+              <Menu
+                id="menu-appbar"
+                anchorEl={anchorElNav}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'left',
+                }}
+                keepMounted
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'left',
+                }}
+                open={Boolean(anchorElNav)}
+                onClose={handleCloseNavMenu}
+                sx={{ display: { xs: 'block', md: 'none' } }}
+              >
+                {pages.map((page) => (
+                  <MenuItem key={page} onClick={handleCloseNavMenu}>
+                    <Link href={`/${page}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
+                      <Typography 
+                        sx={{ 
+                          textAlign: 'left', 
+                          py: 0.5,
+                          color: 'inherit',
+                          fontWeight: 'normal'
+                        }}
+                      >
+                        {getPageDisplayName(page)}
+                      </Typography>
+                    </Link>
+                  </MenuItem>
+                ))}
+              </Menu>
+            </Box>
+            <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+              {pages.map((page) => (
+                <Link key={page} href={`/${page}`} style={{ textDecoration: 'none' }}>
+                  <Button
+                    onClick={handleCloseNavMenu}
+                    sx={{ 
+                      my: 2, 
+                      color: 'white', 
+                      display: 'block',
+                      fontWeight: 'normal',
+                      position: 'relative',
+                      textTransform: 'none',
+                    }}
+                  >
+                    {getPageDisplayName(page)}
+                  </Button>
+                </Link>
+              ))}
+            </Box>
+            <Box sx={{ flexGrow: 0 }}>
+              {user && (
+                <>
+                  <Tooltip title={`${user.name} (${user.email})`}>
+                    <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                      <Avatar 
+                        alt={user.name} 
+                        src={user.avatar || undefined}
+                        sx={{ bgcolor: user.avatar ? 'transparent' : 'secondary.main', color: 'primary.main', borderWidth: 1, borderStyle: 'solid', borderColor: 'secondary.main' }}
+                      >
+                        {!user.avatar && user.name?.charAt(0).toUpperCase()}
+                      </Avatar>
+                    </IconButton>
+                  </Tooltip>
+                  <Menu
+                    sx={{ mt: '45px', minWidth: '200px' }}
+                    id="menu-appbar"
+                    anchorEl={anchorElUser}
+                    anchorOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                    keepMounted
+                    transformOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                    open={Boolean(anchorElUser)}
+                    onClose={handleCloseUserMenu}
+                  >
+                    <Box sx={{ px: 2, py: 1 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                        {user.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {user.email}
+                      </Typography>
+                    </Box>
+                    <Divider />
+                    <MenuItem onClick={handleLogout}>
+                      <ListItemIcon>
+                        <LogoutIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Logout</ListItemText>
+                    </MenuItem>
+                  </Menu>
+                </>
+              )}
+            </Box>
+          </Toolbar>
+        </Container>
+      </AppBar>
+    );
+  }
+
   return (
     <AppBar 
       position="sticky" 

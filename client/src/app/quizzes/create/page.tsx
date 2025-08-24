@@ -45,6 +45,7 @@ import {
   QuestionAnswer as QuestionIcon,
   Preview as PreviewIcon,
   Check as CheckIcon,
+  ArrowDownward as ArrowDownwardIcon,
 } from '@mui/icons-material';
 import { withAuth } from '@/components/WithAuth';
 import { Question, Option } from '@/types';
@@ -137,7 +138,7 @@ const CreateQuizPage = () => {
       _id: `question_${qId}`,
       questionText: '',
       explanation: '',
-      points: 5, // Default points for a correct answer
+      points: undefined, // No default value, will show placeholder
       options: [
         createEmptyOption(qId + 1),
         createEmptyOption(qId + 2),
@@ -607,7 +608,7 @@ const CreateQuizPage = () => {
           explanation: q.explanation || '',
           options: q.options.map(opt => ({
             text: opt.text,
-            points: opt.isCorrect ? (q.points || 5) : 0, // Use question points for correct answers
+            points: opt.isCorrect ? (q.points || 5) : 0, // Use question points for correct answers, default 5
             isCorrect: opt.isCorrect
           }))
         })),
@@ -822,24 +823,27 @@ const CreateQuizPage = () => {
                           />
                         ))
                       }
-                      renderOption={(props, option) => (
-                        <Box component="li" {...props}>
-                          {option.startsWith('Create "') ? (
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <AddIcon sx={{ mr: 1, fontSize: 16, color: 'primary.main' }} />
-                              {option}
-                            </Box>
-                          ) : (
-                            <Chip
-                              label={option}
-                              size="small"
-                              variant="outlined"
-                              color="primary"
-                              sx={{ mr: 1 }}
-                            />
-                          )}
-                        </Box>
-                      )}
+                      renderOption={(props, option) => {
+                        const { key, ...otherProps } = props;
+                        return (
+                          <Box component="li" key={key} {...otherProps}>
+                            {option.startsWith('Create "') ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <AddIcon sx={{ mr: 1, fontSize: 16, color: 'primary.main' }} />
+                                {option}
+                              </Box>
+                            ) : (
+                              <Chip
+                                label={option}
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                                sx={{ mr: 1 }}
+                              />
+                            )}
+                          </Box>
+                        );
+                      }}
                       ChipProps={{
                         size: 'small',
                         variant: 'filled',
@@ -997,14 +1001,14 @@ const CreateQuizPage = () => {
 
                         <TextField
                         size="small"
-                        label="Points for Correct Answer"
+                        label="Points"
                         type="number"
-                        value={question.points}
+                        value={question.points || ''}
                         placeholder='5'
                         onChange={(e) => {
                           const value = parseInt(e.target.value) || 0;
                           const validValue = Math.max(0, value); // Ensure minimum value is 0
-                          handleQuestionChange(questionIndex, 'points', validValue);
+                          handleQuestionChange(questionIndex, 'points', validValue || undefined);
                         }}
                         inputProps={{ min: 0 }}
                         sx={{ width: 200, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
@@ -1038,8 +1042,40 @@ const CreateQuizPage = () => {
                 </Box>
               ))}
 
-              {/* Add Question Button - Below all questions */}
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              {/* Question Navigation and Add Question Button */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+                {/* Question Navigation */}
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  {questions.length > 1 && (
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      disabled={(() => {
+                        const currentIndex = questions.findIndex(q => q._id === expandedAccordion);
+                        return currentIndex >= questions.length - 1;
+                      })()}
+                      onClick={() => {
+                        const currentIndex = questions.findIndex(q => q._id === expandedAccordion);
+                        if (currentIndex < questions.length - 1) {
+                          const nextIndex = currentIndex + 1;
+                          setExpandedAccordion(questions[nextIndex]._id);
+                          // Scroll to the question
+                          setTimeout(() => {
+                            const element = document.getElementById(`question-${nextIndex}`);
+                            if (element) {
+                              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                          }, 100);
+                        }
+                      }}
+                      sx={{ borderRadius: 2, textTransform: 'none', minWidth: 100 }}
+                    >
+                      Next <ArrowDownwardIcon sx={{ ml: 0.5, fontSize: 16 }} />
+                    </Button>
+                  )}
+                </Box>
+
+                {/* Add Question Button */}
                 <Button
                   variant="contained"
                   size="large"
