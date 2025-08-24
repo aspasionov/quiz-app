@@ -47,8 +47,9 @@ import {
   Check as CheckIcon,
 } from '@mui/icons-material';
 import { withAuth } from '@/components/WithAuth';
-import { quizApi, tagApi, Tag, CreateQuizData } from '@/utils/api';
-import { Quiz, Question, Option } from '@/types';
+import { quizApi, type CreateQuizData, type Quiz } from '@/api/quiz.api';
+import { tagApi, type Tag } from '@/utils/api';
+import { Question, Option } from '@/types';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 
 const steps = ['Quiz Information', 'Add Questions', 'Review & Save'];
@@ -198,6 +199,7 @@ const QuizEditPage = () => {
       _id: `question_${qId}`,
       questionText: '',
       explanation: '',
+      points: 5, // Default points for a correct answer
       options: [
         createEmptyOption(qId + 1),
         createEmptyOption(qId + 2),
@@ -245,6 +247,20 @@ const QuizEditPage = () => {
   const handleQuestionChange = (index: number, field: keyof Question, value: any) => {
     const updatedQuestions = [...questions];
     updatedQuestions[index] = { ...updatedQuestions[index], [field]: value };
+    
+    // If points field is being changed, update the correct option's points as well
+    if (field === 'points') {
+      const updatedOptions = [...updatedQuestions[index].options];
+      updatedOptions.forEach((option, i) => {
+        if (option.isCorrect) {
+          option.points = value || 0; // Set correct option to the new points value
+        } else {
+          option.points = 0; // Ensure incorrect options have 0 points
+        }
+      });
+      updatedQuestions[index].options = updatedOptions;
+    }
+    
     setQuestions(updatedQuestions);
   };
 
@@ -263,8 +279,8 @@ const QuizEditPage = () => {
     // Set all options to false first, then set the selected one to true
     updatedOptions.forEach((option, i) => {
       option.isCorrect = i === optionIndex;
-      // Set points based on correctness
-      option.points = i === optionIndex ? 10 : 0;
+      // Set points based on correctness using question.points value
+      option.points = i === optionIndex ? (updatedQuestions[questionIndex].points || 5) : 0;
     });
     
     updatedQuestions[questionIndex] = { ...updatedQuestions[questionIndex], options: updatedOptions };
@@ -297,8 +313,8 @@ const QuizEditPage = () => {
 
   const calculateMaxPoints = () => {
     return questions.reduce((total, question) => {
-      const maxQuestionPoints = Math.max(...question.options.map(option => option.points));
-      return total + maxQuestionPoints;
+      // Use question.points directly instead of looking at option.points
+      return total + (question.points || 5);
     }, 0);
   };
 
@@ -449,7 +465,7 @@ const QuizEditPage = () => {
           explanation: q.explanation || '',
           options: q.options.map(opt => ({
             text: opt.text,
-            points: opt.points,
+            points: opt.isCorrect ? (q.points || 5) : 0, // Use question points for correct answers
             isCorrect: opt.isCorrect
           }))
         })),
@@ -811,19 +827,6 @@ const QuizEditPage = () => {
                               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                             />
 
-                            <TextField
-                              size="small"
-                              label="Points"
-                              type="number"
-                              value={option.points}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || 0;
-                                const validValue = Math.max(0, value); // Ensure minimum value is 0
-                                handleOptionChange(questionIndex, optionIndex, 'points', validValue);
-                              }}
-                              inputProps={{ min: 0 }}
-                              sx={{ width: 100, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                            />
 
                             <IconButton
                               onClick={() => handleRemoveOption(questionIndex, optionIndex)}
@@ -836,17 +839,40 @@ const QuizEditPage = () => {
                         </Paper>
                       ))}
 
+                      <Grid container sx={{ mt: 1 }} alignItems="flex-end">
                       {question.options.length < 6 && (
+                        <Grid size="auto" >
                         <Button
                           variant="outlined"
-                          size="small"
                           startIcon={<AddIcon />}
                           onClick={() => handleAddOption(questionIndex)}
                           sx={{ alignSelf: 'flex-start', borderRadius: 2, textTransform: 'none' }}
                         >
                           Add Option
                         </Button>
+                        </Grid>
                       )}
+
+                        
+                        <Grid size="auto" sx={{ ml: 'auto'}} >
+
+                        <TextField
+                        size="small"
+                        label="Points for Correct Answer"
+                        type="number"
+                        value={question.points}
+                        placeholder='5'
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0;
+                          const validValue = Math.max(0, value); // Ensure minimum value is 0
+                          handleQuestionChange(questionIndex, 'points', validValue);
+                        }}
+                        inputProps={{ min: 0 }}
+                        sx={{ width: 200, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                      />
+                        </Grid>
+
+                      </Grid>
                     </Box>
                   </AccordionDetails>
                 </Accordion>

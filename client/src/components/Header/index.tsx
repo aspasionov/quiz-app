@@ -4,7 +4,7 @@ import * as React from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link'
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -28,17 +28,44 @@ import { authApi } from '@/utils/api';
 
 
 
-const authenticatedPages = ['quizzes'];
+const authenticatedPages = ['quizzes', 'ai-quiz'];
 const unauthenticatedPages = ['login']; // Only login since register redirects to login
 
 function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
+  const [isClient, setIsClient] = React.useState(false);
   const { user, clearUser } = useUserStore();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Handle hydration mismatch by only using pathname on client side
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Determine which pages to show based on authentication status
   const pages = user ? authenticatedPages : unauthenticatedPages;
+
+  // Function to get display name for navigation items
+  const getPageDisplayName = (page: string) => {
+    switch (page) {
+      case 'ai-quiz':
+        return 'AI Quiz';
+      case 'quizzes':
+        return 'Quizzes';
+      case 'login':
+        return 'Login';
+      default:
+        return page.charAt(0).toUpperCase() + page.slice(1);
+    }
+  };
+
+  // Function to check if a page is currently active
+  const isActivePage = (page: string) => {
+    if (!isClient) return false; // Prevent hydration mismatch
+    return pathname === `/${page}` || (page === 'quizzes' && pathname.startsWith('/quizzes'));
+  };
 
   const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElNav(event.currentTarget);
@@ -66,6 +93,9 @@ function ResponsiveAppBar() {
     } finally {
       // Always perform client-side cleanup
       clearUser();
+      // Clear auth cache
+      const { authManager } = await import('@/utils/authManager');
+      authManager.clearAuthCache();
       router.push('/login');
       handleCloseUserMenu();
     }
@@ -123,8 +153,15 @@ function ResponsiveAppBar() {
               {pages.map((page) => (
                 <MenuItem key={page} onClick={handleCloseNavMenu}>
                   <Link href={`/${page}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
-                    <Typography sx={{ textAlign: 'left', textTransform: 'capitalize', py: 0.5 }}>
-                      {page}
+                    <Typography 
+                      sx={{ 
+                        textAlign: 'left', 
+                        py: 0.5,
+                        color: isActivePage(page) ? 'secondary.main' : 'inherit',
+                        fontWeight: isActivePage(page) ? 'bold' : 'normal'
+                      }}
+                    >
+                      {getPageDisplayName(page)}
                     </Typography>
                   </Link>
                 </MenuItem>
@@ -133,15 +170,32 @@ function ResponsiveAppBar() {
           </Box>
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
-              <Button
-                key={page}
-                onClick={handleCloseNavMenu}
-                sx={{ my: 2, color: 'white', display: 'block' }}
-              >
-                <Link href={`/${page}`} className='inherit-link'>
-                  {page}
-                </Link>
-              </Button>
+              <Link key={page} href={`/${page}`} style={{ textDecoration: 'none' }}>
+                <Button
+                  onClick={handleCloseNavMenu}
+                  sx={{ 
+                    my: 2, 
+                    color: isActivePage(page) ? 'secondary.main' : 'white', 
+                    display: 'block',
+                    fontWeight: isActivePage(page) ? 'bold' : 'normal',
+                    position: 'relative',
+                    textTransform: 'none',
+                    '&::after': isActivePage(page) ? {
+                      content: '""',
+                      position: 'absolute',
+                      bottom: 0,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: '80%',
+                      height: '2px',
+                      backgroundColor: 'secondary.main',
+                      borderRadius: '1px'
+                    } : {}
+                  }}
+                >
+                  {getPageDisplayName(page)}
+                </Button>
+              </Link>
             ))}
           </Box>
           <Box sx={{ flexGrow: 0 }}>
@@ -152,7 +206,7 @@ function ResponsiveAppBar() {
                     <Avatar 
                       alt={user.name} 
                       src={user.avatar || undefined}
-                      sx={{ bgcolor: user.avatar ? 'transparent' : 'secondary.main', color: 'primary.main' }}
+                      sx={{ bgcolor: user.avatar ? 'transparent' : 'secondary.main', color: 'primary.main', borderWidth: 1, borderStyle: 'solid', borderColor: 'secondary.main' }}
                     >
                       {!user.avatar && user.name?.charAt(0).toUpperCase()}
                     </Avatar>

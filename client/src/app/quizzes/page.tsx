@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Box,
@@ -26,6 +26,10 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Alert,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -39,8 +43,7 @@ import {
   Quiz as QuizIcon,
 } from '@mui/icons-material';
 import { withAuth } from '@/components/WithAuth';
-import { Quiz } from '@/types';
-import { quizApi } from '@/utils/api';
+import { quizApi, type Quiz } from '@/api/quiz.api';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 import useUserStore from '@/stores/useUserStore';
 
@@ -54,6 +57,9 @@ const QuizzesPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState<Quiz | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [userQuizCount, setUserQuizCount] = useState<{ count: number; maxLimit: number; remaining: number } | null>(null);
+  const [limitWarningOpen, setLimitWarningOpen] = useState(false);
+  const fetchedRef = React.useRef(false);
   const { showSnackbar } = useSnackBarStore();
   const { user } = useUserStore();
 
@@ -93,6 +99,9 @@ const QuizzesPage = () => {
 
   // Fetch quizzes from API
   useEffect(() => {
+    if (fetchedRef.current) return; // Prevent duplicate calls
+    fetchedRef.current = true;
+    
     const fetchQuizzes = async () => {
       try {
         setIsLoading(true);
@@ -115,9 +124,52 @@ const QuizzesPage = () => {
     };
 
     fetchQuizzes();
-  }, [showSnackbar]);
+  }, []); // Remove showSnackbar from dependencies to prevent duplicate calls
+
+  // Calculate user quiz count from loaded quizzes
+  useEffect(() => {
+    if (user && quizzes.length > 0 && !isLoading) {
+      console.log('Calculating user quiz count from loaded quizzes');
+      const userQuizzes = quizzes.filter(quiz => isQuizOwner(quiz));
+      const quizCount = {
+        count: userQuizzes.length,
+        maxLimit: 10,
+        remaining: Math.max(0, 10 - userQuizzes.length)
+      };
+      setUserQuizCount(quizCount);
+      console.log('User quiz count calculated:', quizCount);
+    }
+  }, [user, quizzes, isLoading]);
 
   const handleCreateQuiz = () => {
+    console.log('Create quiz clicked, userQuizCount:', userQuizCount);
+    
+    // If we don't have quiz count data, try to calculate from current quizzes
+    if (!userQuizCount && user && quizzes.length > 0) {
+      const userQuizzes = quizzes.filter(quiz => isQuizOwner(quiz));
+      const calculatedCount = {
+        count: userQuizzes.length,
+        maxLimit: 10,
+        remaining: Math.max(0, 10 - userQuizzes.length)
+      };
+      setUserQuizCount(calculatedCount);
+      console.log('Calculated quiz count on create click:', calculatedCount);
+      
+      // Check limit with calculated count
+      if (calculatedCount.remaining <= 0) {
+        setLimitWarningOpen(true);
+        return;
+      }
+    }
+    
+    // Check if user has reached the quiz limit
+    if (userQuizCount && userQuizCount.remaining <= 0) {
+      console.log('Quiz limit reached, showing warning');
+      setLimitWarningOpen(true);
+      return;
+    }
+    
+    console.log('Proceeding to create quiz page');
     router.push('/quizzes/create?fresh=true');
   };
 
@@ -147,6 +199,16 @@ const QuizzesPage = () => {
       if (response.success) {
         // Remove quiz from local state
         setQuizzes(prevQuizzes => prevQuizzes.filter(q => q._id !== quizToDelete._id));
+        
+        // Update user quiz count
+        if (userQuizCount) {
+          setUserQuizCount({
+            ...userQuizCount,
+            count: userQuizCount.count - 1,
+            remaining: userQuizCount.remaining + 1
+          });
+        }
+        
         showSnackbar('Quiz deleted successfully!', 'success');
       } else {
         throw new Error(response.message || 'Failed to delete quiz');
@@ -481,8 +543,19 @@ const QuizzesPage = () => {
                 {/* Quiz Info */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar sx={{ width: 24, height: 24, bgcolor: 'secondary.main', fontSize: '0.75rem', color: 'primary.main' }}>
-                      {typeof quiz.author === 'string' ? quiz.author.charAt(0) : quiz.author.name.charAt(0)}
+                    <Avatar 
+                      sx={{ 
+                        width: 24, 
+                        height: 24, 
+                        bgcolor: typeof quiz.author === 'object' && quiz.author.avatar ? 'transparent' : 'secondary.main', 
+                        fontSize: '0.75rem', 
+                        color: 'primary.main' 
+                      }}
+                      src={typeof quiz.author === 'object' ? quiz.author.avatar : undefined}
+                    >
+                      {!((typeof quiz.author === 'object' && quiz.author.avatar)) && 
+                        (typeof quiz.author === 'string' ? quiz.author.charAt(0) : quiz.author.name.charAt(0))
+                      }
                     </Avatar>
                     <Typography variant="caption" color="text.secondary">
                       {typeof quiz.author === 'string' ? quiz.author : quiz.author.name}
@@ -559,6 +632,73 @@ const QuizzesPage = () => {
           </Typography>
         </Box>
       )}
+
+      {/* Quiz Limit Warning Dialog */}
+      <Dialog
+        open={limitWarningOpen}
+        onClose={() => setLimitWarningOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 2 }}>
+          🚫 Quiz Limit Reached
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
+            <Typography variant="body1" gutterBottom>
+              <strong>You have reached the maximum limit of {userQuizCount?.maxLimit || 10} quizzes.</strong>
+            </Typography>
+            <Typography variant="body2">
+              You currently have <strong>{userQuizCount?.count || 0}</strong> quizzes. 
+              Please delete some old quizzes to create new ones.
+            </Typography>
+          </Alert>
+          
+          <Typography variant="h6" gutterBottom sx={{ mt: 3, mb: 2 }}>
+            💡 What you can do:
+          </Typography>
+          
+          <List dense>
+            <ListItem>
+              <ListItemText 
+                primary="Go to 'My Quizzes' tab" 
+                secondary="Review your existing quizzes and find ones you no longer need"
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Delete old or unused quizzes" 
+                secondary="Each deleted quiz will free up space for a new one"
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Edit existing quizzes instead" 
+                secondary="You can always update and improve your current quizzes"
+              />
+            </ListItem>
+          </List>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button
+            onClick={() => setLimitWarningOpen(false)}
+            variant="outlined"
+            sx={{ borderRadius: 2, textTransform: 'none' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              setLimitWarningOpen(false);
+              handleTabChange(3); // Switch to "My" tab
+            }}
+            variant="contained"
+            sx={{ borderRadius: 2, textTransform: 'none' }}
+          >
+            Go to My Quizzes
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog
