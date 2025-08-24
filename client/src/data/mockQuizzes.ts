@@ -1,4 +1,4 @@
-import { Quiz } from '@/types';
+import { Quiz } from '@/api/quiz.api';
 
 // Mock data for quizzes with complete question sets
 export const mockQuizzes: Quiz[] = [

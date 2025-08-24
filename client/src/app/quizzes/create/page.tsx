@@ -48,7 +48,8 @@ import {
 } from '@mui/icons-material';
 import { withAuth } from '@/components/WithAuth';
 import { Question, Option } from '@/types';
-import { quizApi, CreateQuizData, tagApi, Tag } from '@/utils/api';
+import { quizApi, type CreateQuizData } from '@/api/quiz.api';
+import { tagApi, type Tag } from '@/utils/api';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 import { QUIZ_STORAGE_KEY } from '@/constans';
 
@@ -136,6 +137,7 @@ const CreateQuizPage = () => {
       _id: `question_${qId}`,
       questionText: '',
       explanation: '',
+      points: 5, // Default points for a correct answer
       options: [
         createEmptyOption(qId + 1),
         createEmptyOption(qId + 2),
@@ -365,6 +367,20 @@ const CreateQuizPage = () => {
   const handleQuestionChange = (index: number, field: keyof Question, value: any) => {
     const updatedQuestions = [...questions];
     updatedQuestions[index] = { ...updatedQuestions[index], [field]: value };
+    
+    // If points field is being changed, update the correct option's points as well
+    if (field === 'points') {
+      const updatedOptions = [...updatedQuestions[index].options];
+      updatedOptions.forEach((option, i) => {
+        if (option.isCorrect) {
+          option.points = value || 0; // Set correct option to the new points value
+        } else {
+          option.points = 0; // Ensure incorrect options have 0 points
+        }
+      });
+      updatedQuestions[index].options = updatedOptions;
+    }
+    
     setQuestions(updatedQuestions);
   };
 
@@ -383,8 +399,8 @@ const CreateQuizPage = () => {
     // Set all options to false first, then set the selected one to true
     updatedOptions.forEach((option, i) => {
       option.isCorrect = i === optionIndex;
-      // Set points based on correctness
-      option.points = i === optionIndex ? 10 : 0;
+      // Set points based on correctness using question.points value
+      option.points = i === optionIndex ? (updatedQuestions[questionIndex].points || 5) : 0;
     });
     
     updatedQuestions[questionIndex] = { ...updatedQuestions[questionIndex], options: updatedOptions };
@@ -417,8 +433,8 @@ const CreateQuizPage = () => {
 
   const calculateMaxPoints = () => {
     return questions.reduce((total, question) => {
-      const maxQuestionPoints = Math.max(...question.options.map(option => option.points));
-      return total + maxQuestionPoints;
+      // Use question.points directly instead of looking at option.points
+      return total + (question.points || 5);
     }, 0);
   };
 
@@ -591,7 +607,7 @@ const CreateQuizPage = () => {
           explanation: q.explanation || '',
           options: q.options.map(opt => ({
             text: opt.text,
-            points: opt.points,
+            points: opt.isCorrect ? (q.points || 5) : 0, // Use question points for correct answers
             isCorrect: opt.isCorrect
           }))
         })),
@@ -620,10 +636,21 @@ const CreateQuizPage = () => {
         showSnackbar('You need to be logged in to create a quiz.', 'error');
         router.push('/login');
       } else if (error.response?.status === 400) {
-        const errorMsg = error.response.data?.message || 'Validation failed';
-        const errors = error.response.data?.errors;
+        const errorData = error.response.data;
+        const errorMsg = errorData?.message || 'Validation failed';
+        const errors = errorData?.errors;
         
-        if (errors && errors.length > 0) {
+        // Check if it's the quiz limit error
+        if (errorData?.error === 'QUIZ_LIMIT_REACHED') {
+          showSnackbar(
+            `${errorMsg} You have ${errorData.data?.currentCount}/${errorData.data?.maxLimit} quizzes. Go to your quizzes page to delete some old ones.`,
+            'warning'
+          );
+          // Optionally redirect to quizzes page after a delay
+          setTimeout(() => {
+            router.push('/quizzes?tab=my');
+          }, 3000);
+        } else if (errors && errors.length > 0) {
           const errorList = errors.map((err: any) => err.message).join(', ');
           showSnackbar(`Validation errors: ${errorList}`, 'error');
         } else {
@@ -838,45 +865,37 @@ const CreateQuizPage = () => {
               </Box>
 
               {questions.map((question, questionIndex) => (
-                <Accordion 
-                  key={question._id}
-                  id={`question-${questionIndex}`}
-                  expanded={expandedAccordion === question._id}
-                  onChange={(event, isExpanded) => {
-                    handleAccordionChange(question._id, isExpanded);
-                  }}
-                  sx={{ 
-                    mb: 1, 
-                    borderRadius: 2, 
-                    '&:before': { display: 'none' },
-                    // Add visual indicator for invalid questions
-                    ...(expandedAccordion === question._id && !isQuestionValid(question) && {
+                <Box key={question._id} sx={{ position: 'relative' }}>
+                  <Accordion 
+                    id={`question-${questionIndex}`}
+                    expanded={expandedAccordion === question._id}
+                    onChange={(event, isExpanded) => {
+                      handleAccordionChange(question._id, isExpanded);
+                    }}
+                    sx={{ 
+                      mb: 1, 
+                      borderRadius: 2, 
+                      '&:before': { display: 'none' },
                       border: '2px solid',
-                      borderColor: 'warning.main',
-                      backgroundColor: 'warning.50'
-                    })
-                  }}
-                >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', mr: 2 }}>
+                      borderColor: 'transparent',
+                      // Add visual indicator for invalid questions
+                      ...(expandedAccordion === question._id && !isQuestionValid(question) && {
+                        
+                        borderColor: 'warning.main',
+                        backgroundColor: 'warning.50'
+                      })
+                    }}
+                  >
+                    <AccordionSummary 
+                      expandIcon={<ExpandMoreIcon />}
+                      sx={{ pr: 6 }} // Add padding to make room for delete button
+                    >
                       <Typography sx={{ fontWeight: 500 }}>
                         Question {questionIndex + 1}: {question.questionText || 'Untitled Question'}
                       </Typography>
-                      <IconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteQuestion(questionIndex);
-                        }}
-                        disabled={questions.length === 1}
-                        size="small"
-                        sx={{ color: 'error.main' }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  </AccordionSummary>
-                  
-                  <AccordionDetails>
+                    </AccordionSummary>
+                    
+                    <AccordionDetails>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       <TextField
                         fullWidth
@@ -948,20 +967,6 @@ const CreateQuizPage = () => {
                               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                             />
 
-                            <TextField
-                              size="small"
-                              label="Points"
-                              type="number"
-                              value={option.points}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || 0;
-                                const validValue = Math.max(0, value); // Ensure minimum value is 0
-                                handleOptionChange(questionIndex, optionIndex, 'points', validValue);
-                              }}
-                              inputProps={{ min: 0 }}
-                              sx={{ width: 100, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                            />
-
                             <IconButton
                               onClick={() => handleRemoveOption(questionIndex, optionIndex)}
                               disabled={question.options.length <= 2}
@@ -973,20 +978,64 @@ const CreateQuizPage = () => {
                         </Paper>
                       ))}
 
+                      <Grid container sx={{ mt: 1 }} alignItems="flex-end">
                       {question.options.length < 6 && (
+                      <Grid size="auto" >
                         <Button
                           variant="outlined"
-                          size="small"
                           startIcon={<AddIcon />}
                           onClick={() => handleAddOption(questionIndex)}
                           sx={{ alignSelf: 'flex-start', borderRadius: 2, textTransform: 'none' }}
                         >
                           Add Option
                         </Button>
+                        </Grid>
                       )}
+
+                        
+                        <Grid size="auto" sx={{ ml: 'auto'}}>
+
+                        <TextField
+                        size="small"
+                        label="Points for Correct Answer"
+                        type="number"
+                        value={question.points}
+                        placeholder='5'
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0;
+                          const validValue = Math.max(0, value); // Ensure minimum value is 0
+                          handleQuestionChange(questionIndex, 'points', validValue);
+                        }}
+                        inputProps={{ min: 0 }}
+                        sx={{ width: 200, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                      />
+                        </Grid>
+
+                      </Grid>
+
                     </Box>
                   </AccordionDetails>
                 </Accordion>
+                
+                {/* Delete button positioned absolutely outside the accordion */}
+                <IconButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteQuestion(questionIndex);
+                  }}
+                  disabled={questions.length === 1}
+                  size="small"
+                  sx={{ 
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    color: 'error.main',
+                    zIndex: 1
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+                </Box>
               ))}
 
               {/* Add Question Button - Below all questions */}
@@ -1027,7 +1076,7 @@ const CreateQuizPage = () => {
               </Box>
 
               <Grid container spacing={1}>
-                <Grid size={{ xs: 12, md: 8 }}>
+                <Grid size={{ xs: 12, md: 8}}>
                   <Paper elevation={1} sx={{ p: 1, borderRadius: 2, mb: 1 }}>
                     <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
                       {watchedValues.title}

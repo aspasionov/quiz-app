@@ -158,7 +158,7 @@ router.get('/', async (req, res) => {
 
     // Get quizzes with pagination
     const quizzes = await Quiz.find(filter)
-      .populate('author', 'name email')
+      .populate('author', 'name email avatar')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum)
@@ -187,7 +187,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-      .populate('author', 'name email');
+      .populate('author', 'name email avatar');
 
     if (!quiz) {
       return res.status(404).json({
@@ -257,6 +257,20 @@ router.post('/', auth, quizValidation, async (req, res) => {
 
     const { title, description, tags, visibility, questions, category } = req.body;
 
+    // Check user's quiz limit (max 10 quizzes per user)
+    const userQuizCount = await Quiz.countDocuments({ author: req.userId });
+    if (userQuizCount >= 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have reached the maximum limit of 10 quizzes. Please delete some old quizzes to create new ones.',
+        error: 'QUIZ_LIMIT_REACHED',
+        data: {
+          currentCount: userQuizCount,
+          maxLimit: 10
+        }
+      });
+    }
+
     // Validate that each question has at least one correct answer
     for (let i = 0; i < questions.length; i++) {
       const question = questions[i];
@@ -294,7 +308,7 @@ router.post('/', auth, quizValidation, async (req, res) => {
     await quiz.save();
 
     // Populate author info before sending response
-    await quiz.populate('author', 'name email');
+    await quiz.populate('author', 'name email avatar');
 
     res.status(201).json({
       success: true,
@@ -387,7 +401,7 @@ router.put('/:id', auth, quizValidation, async (req, res) => {
     quiz.updatedAt = new Date();
 
     await quiz.save();
-    await quiz.populate('author', 'name email');
+    await quiz.populate('author', 'name email avatar');
 
     res.json({
       success: true,
@@ -505,7 +519,7 @@ router.get('/user/:userId', async (req, res) => {
     const total = await Quiz.countDocuments(filter);
     
     const quizzes = await Quiz.find(filter)
-      .populate('author', 'name email')
+      .populate('author', 'name email avatar')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum)
@@ -534,6 +548,28 @@ router.get('/user/:userId', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while fetching user quizzes'
+    });
+  }
+});
+
+// GET /api/quiz/user/count - Get current user's quiz count
+router.get('/user/count', auth, async (req, res) => {
+  try {
+    const count = await Quiz.countDocuments({ author: req.userId });
+    
+    res.json({
+      success: true,
+      data: {
+        count,
+        maxLimit: 10,
+        remaining: Math.max(0, 10 - count)
+      }
+    });
+  } catch (error) {
+    console.error('Error getting user quiz count:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while getting quiz count'
     });
   }
 });

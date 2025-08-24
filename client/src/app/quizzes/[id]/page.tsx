@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   Box,
   Button,
@@ -28,9 +28,9 @@ import {
   Star as StarIcon,
 } from '@mui/icons-material';
 import { withAuth } from '@/components/WithAuth';
-import { quizApi } from '@/utils/api';
-import { Quiz } from '@/types';
+import { quizApi, type Quiz } from '@/api/quiz.api';
 import useSnackBarStore from '@/stores/useSnackBarStore';
+import useUserStore from '@/stores/useUserStore';
 
 interface UserAnswer {
   questionId: string;
@@ -51,8 +51,11 @@ interface QuizResult {
 const QuizTakingPage = () => {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const quizId = params.id as string;
+  const source = searchParams.get('source');
   const { showSnackbar } = useSnackBarStore();
+  const { user } = useUserStore();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,7 +182,11 @@ const QuizTakingPage = () => {
   };
 
   const handleBackToQuizzes = () => {
-    router.push('/quizzes');
+    if (source === 'ai-quiz') {
+      router.push('/ai-quiz');
+    } else {
+      router.push('/quizzes');
+    }
   };
 
   const getScoreColor = (percentage: number) => {
@@ -332,7 +339,7 @@ const QuizTakingPage = () => {
                   fontWeight: 600
                 }}
               >
-                Back to Quizzes
+                {source === 'ai-quiz' ? 'Back' : 'Back to Quizzes'}
               </Button>
             </Box>
           </CardContent>
@@ -348,7 +355,7 @@ const QuizTakingPage = () => {
     <Container maxWidth="md" sx={{ py: 4 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Tooltip title="Back to Quizzes">
+        <Tooltip title={source === 'ai-quiz' ? 'Back to AI Quiz' : 'Back to Quizzes'}>
           <IconButton onClick={handleBackToQuizzes} sx={{ mr: 2 }}>
             <ArrowBackIcon />
           </IconButton>
@@ -358,14 +365,24 @@ const QuizTakingPage = () => {
             {quiz.title}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Avatar sx={{ width: 20, height: 20, bgcolor: 'secondary.main', fontSize: '0.7rem' }}>
-                {typeof quiz.author === 'string' ? quiz.author.charAt(0) : quiz.author.name.charAt(0)}
-              </Avatar>
-              <Typography variant="caption" color="text.secondary">
-                {typeof quiz.author === 'string' ? quiz.author : quiz.author.name}
-              </Typography>
-            </Box>
+            {user && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Avatar 
+                  src={user.avatar} 
+                  sx={{ 
+                    width: 24, 
+                    height: 24, 
+                    bgcolor: 'primary.main', 
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  {user.name.charAt(0).toUpperCase()}
+                </Avatar>
+                <Typography variant="caption" color="text.secondary">
+                  {user.name}
+                </Typography>
+              </Box>
+            )}
             <Typography variant="caption" color="text.secondary">•</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <TimerIcon sx={{ fontSize: 16 }} color="action" />

@@ -17,6 +17,7 @@ export type Question = {
   _id?: string
   questionText: string
   explanation?: string
+  points?: number
   options: Option[]
 }
 

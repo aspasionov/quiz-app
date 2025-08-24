@@ -35,17 +35,15 @@ export default function GoogleAuthSuccess() {
         localStorage.setItem('token', token);
         console.log('Token stored:', token.substring(0, 20) + '...');
 
-        // Get user data with the token
-        const response = await authApi.getCurrentUser();
-        console.log('getCurrentUser response:', response);
+        // Get user data with the token using auth manager
+        const { authManager } = await import('@/utils/authManager');
+        const userData = await authManager.ensureAuthenticated();
         
-        if (response.success && response.data) {
-          console.log('User data received:', response.data);
-          setUser(response.data);
+        if (userData) {
+          setUser(userData);
           showSnackbar('Successfully signed in with Google!', 'success');
           router.push('/quizzes');
         } else {
-          console.error('Invalid response format:', response);
           throw new Error('Failed to get user data');
         }
       } catch (error) {
