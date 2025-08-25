@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -10,48 +10,28 @@ import {
   Button,
   Container,
   Typography,
-  Card,
-  CardContent,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
   IconButton,
-  Divider,
-  Switch,
-  FormControlLabel,
   Alert,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Tooltip,
   Paper,
-  Autocomplete,
-  Grid,
   Stepper,
   Step,
   StepLabel,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  ExpandMore as ExpandMoreIcon,
   Save as SaveIcon,
-  Preview as PreviewIcon,
   Quiz as QuizIcon,
-  Info as InfoIcon,
-  QuestionAnswer as QuestionIcon,
-  Check as CheckIcon,
-  ArrowDownward as ArrowDownwardIcon,
 } from '@mui/icons-material';
 import { withAuth } from '@/components/WithAuth';
-import { quizApi, type CreateQuizData, type Quiz } from '@/api/quiz.api';
+import { quizApi, type CreateQuizData } from '@/api/quiz.api';
 import { tagApi, type Tag } from '@/utils/api';
 import { Question, Option } from '@/types';
 import useSnackBarStore from '@/stores/useSnackBarStore';
+import { GeneralStep, type QuizInfoFormData } from '@/components/Wizard/steps/GeneralStep';
+import { QuestionsStep } from '@/components/Wizard/steps/QuestionsStep';
+import { ReviewStep } from '@/components/Wizard/steps/ReviewStep';
+import WizardFooter from '@/components/Wizard/Footer';
 
 const steps = ['Quiz Information', 'Add Questions', 'Review & Save'];
 
@@ -70,8 +50,6 @@ const quizInfoSchema = z.object({
     })
 });
 
-type QuizInfoFormData = z.infer<typeof quizInfoSchema>;
-
 const QuizEditPage = () => {
   const params = useParams();
   const router = useRouter();
@@ -84,7 +62,6 @@ const QuizEditPage = () => {
   // React Hook Form setup
   const {
     control,
-    handleSubmit,
     watch,
     setValue,
     trigger,
@@ -106,7 +83,7 @@ const QuizEditPage = () => {
   const tags = watchedValues.tags || [];
 
   // Quiz and state management
-  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  // const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -130,7 +107,7 @@ const QuizEditPage = () => {
           
           if (response.success && response.data) {
             const foundQuiz = response.data;
-            setQuiz(foundQuiz);
+            // setQuiz(foundQuiz);
             
             // Set form values
             setValue('title', foundQuiz.title);
@@ -512,13 +489,6 @@ const QuizEditPage = () => {
     }
   };
 
-  const handlePreview = () => {
-    if (isNewQuiz) {
-      showSnackbar('Please save the quiz first before previewing', 'warning');
-      return;
-    }
-    router.push(`/quizzes/${quizId}`);
-  };
 
   const handleBackToQuizzes = () => {
     router.push('/quizzes');
@@ -528,527 +498,44 @@ const QuizEditPage = () => {
     switch (step) {
       case 0:
         return (
-          <Card elevation={2} sx={{ borderRadius: 3 }}>
-            <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <InfoIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Quiz Information
-                </Typography>
-              </Box>
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Controller
-                  name="title"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      size="small"
-                      label="Quiz Title"
-                      required
-                      placeholder="Enter an engaging title for your quiz"
-                      error={!!fieldState.error}
-                      helperText={fieldState.error?.message || `${field.value?.length || 0}/256 characters`}
-                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                    />
-                  )}
-                />
-
-                <Controller
-                  name="description"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      size="small"
-                      label="Description"
-                      multiline
-                      rows={4}
-                      placeholder="Describe what this quiz covers and what learners will gain"
-                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                    />
-                  )}
-                />
-
-                <Grid container spacing={1}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Controller
-                      name="category"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          fullWidth
-                          size="small"
-                          label="Category"
-                          placeholder="e.g., Programming, Science, History"
-                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Controller
-                      name="visibility"
-                      control={control}
-                      render={({ field }) => (
-                        <FormControl fullWidth size="small">
-                          <InputLabel id="visibility-label">Visibility</InputLabel>
-                          <Select
-                            {...field}
-                            labelId="visibility-label"
-                            label="Visibility"
-                            size="small"
-                            sx={{ borderRadius: 2 }}
-                          >
-                            <MenuItem value="public">🌐 Public - Anyone can take</MenuItem>
-                            <MenuItem value="private">🔒 Private - Only you</MenuItem>
-                          </Select>
-                        </FormControl>
-                      )}
-                    />
-                  </Grid>
-                </Grid>
-
-                <Controller
-                  name="tags"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Autocomplete
-                      {...field}
-                      multiple
-                      freeSolo
-                      size="small"
-                      options={availableTags}
-                      value={field.value || []}
-                      loading={isLoadingTags}
-                      onChange={(event, value) => {
-                        const newTags = value.map(tag => 
-                          typeof tag === 'string' && tag.startsWith('Create "') 
-                            ? tag.slice(8, -1) // Remove 'Create "' and '"'
-                            : tag
-                        ).filter(tag => typeof tag === 'string' && tag.trim() !== '');
-                        field.onChange(newTags);
-                      }}
-                      filterOptions={(options, params) => {
-                        const filtered = options.filter(option =>
-                          option.toLowerCase().includes(params.inputValue.toLowerCase())
-                        );
-                        
-                        const { inputValue } = params;
-                        // Suggest the creation of a new value
-                        const isExisting = options.some(option => 
-                          inputValue.toLowerCase() === option.toLowerCase()
-                        );
-                        
-                        if (inputValue !== '' && !isExisting) {
-                          filtered.push(`Create "${inputValue}"`);
-                        }
-                        
-                        return filtered;
-                      }}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Tags"
-                          placeholder={isLoadingTags ? "Loading tags..." : "Type to search or create tags..."}
-                          error={!!fieldState.error}
-                          helperText={fieldState.error?.message || 'Add at least 1 tag to describe your quiz'}
-                          sx={{
-                            '& .MuiOutlinedInput-root': { borderRadius: 2 }
-                          }}
-                        />
-                      )}
-                      renderTags={(value, getTagProps) =>
-                        value.map((option, index) => (
-                          <Chip
-                            variant="filled"
-                            label={option}
-                            size="small"
-                            color="primary"
-                            {...getTagProps({ index })}
-                            key={index}
-                            sx={{ borderRadius: 1 }}
-                          />
-                        ))
-                      }
-                      renderOption={(props, option) => {
-                        const { key, ...otherProps } = props;
-                        return (
-                          <Box component="li" key={key} {...otherProps}>
-                            {option.startsWith('Create "') ? (
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <AddIcon sx={{ mr: 1, fontSize: 16, color: 'primary.main' }} />
-                                {option}
-                              </Box>
-                            ) : (
-                              <Chip
-                                label={option}
-                                size="small"
-                                variant="outlined"
-                                color="primary"
-                                sx={{ mr: 1 }}
-                              />
-                            )}
-                          </Box>
-                        );
-                      }}
-                      ChipProps={{
-                        size: 'small',
-                        variant: 'filled',
-                        color: 'primary'
-                      }}
-                    />
-                  )}
-                />
-              </Box>
-            </CardContent>
-          </Card>
+          <GeneralStep
+            control={control}
+            errors={errors}
+            watchedValues={watchedValues}
+            availableTags={availableTags}
+            isLoadingTags={isLoadingTags}
+          />
         );
 
       case 1:
         return (
-          <Card elevation={2} sx={{ borderRadius: 3 }}>
-            <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <QuestionIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Questions ({questions.length})
-                </Typography>
-              </Box>
-
-              {questions.map((question, questionIndex) => (
-                <Box key={question._id} sx={{ position: 'relative' }}>
-                  <Accordion 
-                    id={`question-${questionIndex}`}
-                    expanded={expandedAccordion === question._id}
-                    onChange={(event, isExpanded) => {
-                      handleAccordionChange(question._id, isExpanded);
-                    }}
-                    sx={{ 
-                      mb: 1, 
-                      borderRadius: 2, 
-                      '&:before': { display: 'none' },
-                      // Add visual indicator for invalid questions
-                      ...(expandedAccordion === question._id && !isQuestionValid(question) && {
-                        border: '2px solid',
-                        borderColor: 'warning.main',
-                        backgroundColor: 'warning.50'
-                      })
-                    }}
-                  >
-                    <AccordionSummary 
-                      expandIcon={<ExpandMoreIcon />}
-                      sx={{ pr: 6 }} // Add padding to make room for delete button
-                    >
-                      <Typography sx={{ fontWeight: 500 }}>
-                        Question {questionIndex + 1}: {question.questionText || 'Untitled Question'}
-                      </Typography>
-                    </AccordionSummary>
-                  
-                  <AccordionDetails>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        label="Question Text"
-                        value={question.questionText}
-                        onChange={(e) => handleQuestionChange(questionIndex, 'questionText', e.target.value)}
-                        required
-                        multiline
-                        rows={2}
-                        placeholder="Enter your question here..."
-                        error={question.questionText.trim() !== '' && question.questionText.trim().length < 5}
-                        helperText={
-                          question.questionText.trim() !== '' && question.questionText.trim().length < 5
-                            ? `Question must be at least 5 characters (${question.questionText.trim().length}/5)`
-                            : `${question.questionText.length} characters`
-                        }
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                      />
-
-                      <TextField
-                        fullWidth
-                        size="small"
-                        label="Explanation (optional)"
-                        value={question.explanation}
-                        onChange={(e) => handleQuestionChange(questionIndex, 'explanation', e.target.value)}
-                        multiline
-                        rows={2}
-                        placeholder="Explain the correct answer and provide additional context..."
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                      />
-
-                      <Divider />
-
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
-                        <CheckIcon sx={{ mr: 1 }} />
-                        Answer Options
-                      </Typography>
-
-                      {question.options.map((option, optionIndex) => (
-                        <Paper key={option._id} elevation={1} sx={{ p: 1, borderRadius: 2, border: option.isCorrect ? 2 : 1, borderColor: option.isCorrect ? 'success.main' : 'divider' }}>
-                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                            <FormControlLabel
-                              control={
-                                <Switch
-                                  checked={option.isCorrect}
-                                  onChange={() => handleCorrectAnswerChange(questionIndex, optionIndex)}
-                                  color="success"
-                                />
-                              }
-                              label={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <Typography variant="body2" color={option.isCorrect ? 'success.main' : 'text.secondary'}>
-                                    {option.isCorrect ? '✓ Correct' : 'Incorrect'}
-                                  </Typography>
-                                </Box>
-                              }
-                              sx={{ minWidth: 160 }}
-                            />
-                            
-                            <TextField
-                              fullWidth
-                              size="small"
-                              label={`Option ${optionIndex + 1}`}
-                              value={option.text}
-                              onChange={(e) => handleOptionChange(questionIndex, optionIndex, 'text', e.target.value)}
-                              required
-                              placeholder="Enter answer option..."
-                              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                            />
-
-
-                            <IconButton
-                              onClick={() => handleRemoveOption(questionIndex, optionIndex)}
-                              disabled={question.options.length <= 2}
-                              color="error"
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Box>
-                        </Paper>
-                      ))}
-
-                      <Grid container sx={{ mt: 1 }} alignItems="flex-end">
-                      {question.options.length < 6 && (
-                        <Grid size="auto" >
-                        <Button
-                          variant="outlined"
-                          startIcon={<AddIcon />}
-                          onClick={() => handleAddOption(questionIndex)}
-                          sx={{ alignSelf: 'flex-start', borderRadius: 2, textTransform: 'none' }}
-                        >
-                          Add Option
-                        </Button>
-                        </Grid>
-                      )}
-
-                        
-                        <Grid size="auto" sx={{ ml: 'auto'}} >
-
-                        <TextField
-                        size="small"
-                        label="Points"
-                        type="number"
-                        value={question.points || ''}
-                        placeholder='5'
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value) || 0;
-                          const validValue = Math.max(0, value); // Ensure minimum value is 0
-                          handleQuestionChange(questionIndex, 'points', validValue || undefined);
-                        }}
-                        inputProps={{ min: 0 }}
-                        sx={{ width: 200, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                      />
-                        </Grid>
-
-                      </Grid>
-                    </Box>
-                  </AccordionDetails>
-                </Accordion>
-                
-                {/* Delete button positioned absolutely outside the accordion */}
-                <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteQuestion(questionIndex);
-                  }}
-                  disabled={questions.length === 1}
-                  size="small"
-                  sx={{ 
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    color: 'error.main',
-                    zIndex: 1
-                  }}
-                >
-                  <DeleteIcon />
-                </IconButton>
-                </Box>
-              ))}
-
-              {/* Question Navigation and Add Question Button */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-                {/* Question Navigation */}
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  {questions.length > 1 && (
-                    <Button
-                      variant="outlined"
-                      size="large"
-                      disabled={(() => {
-                        const currentIndex = questions.findIndex(q => q._id === expandedAccordion);
-                        return currentIndex >= questions.length - 1;
-                      })()}
-                      onClick={() => {
-                        const currentIndex = questions.findIndex(q => q._id === expandedAccordion);
-                        if (currentIndex < questions.length - 1) {
-                          const nextIndex = currentIndex + 1;
-                          setExpandedAccordion(questions[nextIndex]._id);
-                          // Scroll to the question
-                          setTimeout(() => {
-                            const element = document.getElementById(`question-${nextIndex}`);
-                            if (element) {
-                              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }
-                          }, 100);
-                        }
-                      }}
-                      sx={{ borderRadius: 2, textTransform: 'none', minWidth: 100 }}
-                    >
-                      Next <ArrowDownwardIcon sx={{ ml: 0.5, fontSize: 16 }} />
-                    </Button>
-                  )}
-                </Box>
-
-                {/* Add Question Button */}
-                <Button
-                  variant="contained"
-                  size="large"
-                  startIcon={<AddIcon />}
-                  onClick={handleAddQuestion}
-                  sx={{ 
-                    borderRadius: 2, 
-                    textTransform: 'none',
-                    px: 4,
-                    py: 1.5,
-                    fontWeight: 600,
-                    boxShadow: 2,
-                    '&:hover': {
-                      boxShadow: 4
-                    }
-                  }}
-                >
-                  Add Question
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
+          <QuestionsStep
+            questions={questions}
+            expandedAccordion={expandedAccordion}
+            onQuestionChange={handleQuestionChange}
+            onOptionChange={handleOptionChange}
+            onCorrectAnswerChange={handleCorrectAnswerChange}
+            onAddOption={handleAddOption}
+            onRemoveOption={handleRemoveOption}
+            onAddQuestion={handleAddQuestion}
+            onDeleteQuestion={handleDeleteQuestion}
+            onAccordionChange={handleAccordionChange}
+            onExpandedAccordionChange={setExpandedAccordion}
+            isQuestionValid={isQuestionValid}
+          />
         );
 
       case 2:
         return (
-          <Card elevation={2} sx={{ borderRadius: 3 }}>
-            <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <PreviewIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Review Your Quiz
-                </Typography>
-              </Box>
-
-              <Grid container spacing={1}>
-                <Grid size={{ xs: 12, md: 8 }}>
-                  <Paper elevation={1} sx={{ p: 1, borderRadius: 2, mb: 1 }}>
-                    <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-                      {watchedValues.title}
-                    </Typography>
-                    {watchedValues.description && (
-                      <Typography variant="body1" color="text.secondary" paragraph>
-                        {watchedValues.description}
-                      </Typography>
-                    )}
-                    {tags.length > 0 && (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1,}}>
-                        {tags.map((tag, index) => (
-                          <Chip
-                            key={index}
-                            label={tag}
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                          />
-                        ))}
-                      </Box>
-                    )}
-                    <Typography variant="caption" color="text.secondary">
-                      {watchedValues.visibility} quiz • {watchedValues.category || 'General'}
-                    </Typography>
-                  </Paper>
-
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                    Questions Preview
-                  </Typography>
-                  {questions.map((question, index) => (
-                    <Paper key={question._id} elevation={1} sx={{ p: 1, mb: 1, borderRadius: 2 }}>
-                      <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 500 }}>
-                        {index + 1}. {question.questionText}
-                      </Typography>
-                      <Box sx={{ ml: 1 }}>
-                        {question.options.map((option, optIndex) => (
-                          <Typography
-                            key={option._id}
-                            variant="body2"
-                            sx={{
-                              color: option.isCorrect ? 'success.main' : 'text.secondary',
-                              fontWeight: option.isCorrect ? 600 : 400,
-                              mb: 0.5
-                            }}
-                          >
-                            {String.fromCharCode(65 + optIndex)}. {option.text} {option.isCorrect && '✓'}
-                          </Typography>
-                        ))}
-                      </Box>
-                    </Paper>
-                  ))}
-                </Grid>
-
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <Alert severity="info" sx={{ borderRadius: 2, mb: 1 }}>
-                    <Typography variant="body2">
-                      <strong>Quiz Statistics:</strong><br />
-                      • {questions.length} question{questions.length !== 1 ? 's' : ''}<br />
-                      • {calculateMaxPoints()} total points<br />
-                      • {watchedValues.visibility} visibility<br />
-                      {watchedValues.category && `• ${watchedValues.category} category`}
-                    </Typography>
-                  </Alert>
-
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    size="large"
-                    startIcon={<SaveIcon />}
-                    onClick={handleSave}
-                    disabled={saving}
-                    sx={{
-                      borderRadius: 2,
-                      py: 2,
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      fontSize: '1.1rem'
-                    }}
-                  >
-                    {saving ? (isNewQuiz ? 'Creating Quiz...' : 'Updating Quiz...') : (isNewQuiz ? 'Create Quiz' : 'Update Quiz')}
-                  </Button>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+          <ReviewStep
+            watchedValues={watchedValues}
+            tags={tags}
+            questions={questions}
+            calculateMaxPoints={calculateMaxPoints}
+            onSave={handleSave}
+            saving={saving}
+            isNewQuiz={isNewQuiz}
+          />
         );
 
       default:
@@ -1111,47 +598,12 @@ const QuizEditPage = () => {
         {renderStepContent(activeStep)}
       </Box>
 
-      {/* Add bottom padding to prevent content from being hidden behind fixed buttons */}
-      <Box sx={{ pb: 10 }} />
-      
-      {/* Fixed Navigation Buttons */}
-      <Box 
-        sx={{ 
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          display: 'flex', 
-          justifyContent: 'space-between',
-          p: 1,
-          backgroundColor: 'background.paper',
-          borderTop: 1,
-          borderColor: 'divider',
-          boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
-          zIndex: 1000
-        }}
-      >
-        <Button
-          disabled={activeStep === 0}
-          onClick={handleBack}
-          variant="outlined"
-          size="large"
-          sx={{ borderRadius: 2, px: 4, textTransform: 'none' }}
-        >
-          Back
-        </Button>
-        <Box sx={{ flex: '1 1 auto' }} />
-        {activeStep < steps.length - 1 && (
-          <Button
-            variant="contained"
-            onClick={handleNext}
-            size="large"
-            sx={{ borderRadius: 2, px: 4, textTransform: 'none', fontWeight: 600 }}
-          >
-            Next
-          </Button>
-        )}
-      </Box>
+      <WizardFooter
+        activeStep={activeStep}
+        totalSteps={steps.length}
+        onBack={handleBack}
+        onNext={handleNext}
+      />
     </Container>
   );
 };
