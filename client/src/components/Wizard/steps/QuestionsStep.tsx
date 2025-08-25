@@ -39,7 +39,6 @@ interface QuestionsStepProps {
   onAddQuestion: () => void;
   onDeleteQuestion: (index: number) => void;
   onAccordionChange: (questionId: string, isExpanded: boolean) => void;
-  onExpandedAccordionChange: (id: string | false) => void;
   isQuestionValid: (question: Question) => boolean;
 }
 
@@ -54,7 +53,6 @@ export const QuestionsStep = ({
   onAddQuestion,
   onDeleteQuestion,
   onAccordionChange,
-  onExpandedAccordionChange,
   isQuestionValid,
 }: QuestionsStepProps) => {
   
@@ -240,38 +238,7 @@ export const QuestionsStep = ({
         ))}
 
         {/* Question Navigation and Add Question Button */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-          {/* Question Navigation */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {questions.length > 1 && (
-              <Button
-                variant="outlined"
-                size="large"
-                disabled={(() => {
-                  const currentIndex = questions.findIndex(q => q._id === expandedAccordion);
-                  return currentIndex >= questions.length - 1;
-                })()}
-                onClick={() => {
-                  const currentIndex = questions.findIndex(q => q._id === expandedAccordion);
-                  if (currentIndex < questions.length - 1) {
-                    const nextIndex = currentIndex + 1;
-                    onExpandedAccordionChange(questions[nextIndex]._id);
-                    // Scroll to the question
-                    setTimeout(() => {
-                      const element = document.getElementById(`question-${nextIndex}`);
-                      if (element) {
-                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }
-                    }, 100);
-                  }
-                }}
-                sx={{ borderRadius: 2, textTransform: 'none', minWidth: 100 }}
-              >
-                Next <ArrowDownwardIcon sx={{ ml: 0.5, fontSize: 16 }} />
-              </Button>
-            )}
-          </Box>
-
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2 }}>
           {/* Add Question Button */}
           <Button
             variant="contained"

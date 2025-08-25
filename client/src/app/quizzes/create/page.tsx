@@ -8,15 +8,10 @@ import { z } from 'zod';
 import {
   Box,
   Button,
-  Container,
   Typography,
   Chip,
   IconButton,
   Tooltip,
-  Paper,
-  Stepper,
-  Step,
-  StepLabel,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -27,10 +22,9 @@ import { quizApi, type CreateQuizData } from '@/api/quiz.api';
 import { tagApi, type Tag } from '@/utils/api';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 import { QUIZ_STORAGE_KEY } from '@/constans';
-import { GeneralStep, type QuizInfoFormData } from '@/components/Wizard/steps/GeneralStep';
-import { QuestionsStep } from '@/components/Wizard/steps/QuestionsStep';
-import { ReviewStep } from '@/components/Wizard/steps/ReviewStep';
-import WizardFooter from '@/components/Wizard/Footer';
+import Wizard from '@/components/Wizard';
+import { renderStepContent, type StepRendererProps } from '@/components/Wizard/StepRenderer';
+import { type QuizInfoFormData } from '@/components/Wizard/steps/GeneralStep';
 
 const steps = ['Quiz Information', 'Add Questions', 'Review & Save'];
 
@@ -647,118 +641,74 @@ const CreateQuizPage = () => {
     router.push('/quizzes');
   };
 
-  const renderStepContent = (step: number) => {
-    switch (step) {
-      case 0:
-        return (
-          <GeneralStep
-            control={control}
-            errors={errors}
-            watchedValues={watchedValues}
-            availableTags={availableTags}
-            isLoadingTags={isLoadingTags}
-          />
-        );
-
-      case 1:
-        return (
-          <QuestionsStep
-            questions={questions}
-            expandedAccordion={expandedAccordion}
-            onQuestionChange={handleQuestionChange}
-            onOptionChange={handleOptionChange}
-            onCorrectAnswerChange={handleCorrectAnswerChange}
-            onAddOption={handleAddOption}
-            onRemoveOption={handleRemoveOption}
-            onAddQuestion={handleAddQuestion}
-            onDeleteQuestion={handleDeleteQuestion}
-            onAccordionChange={handleAccordionChange}
-            onExpandedAccordionChange={setExpandedAccordion}
-            isQuestionValid={isQuestionValid}
-          />
-        );
-
-      case 2:
-        return (
-          <ReviewStep
-            watchedValues={watchedValues}
-            tags={tags}
-            questions={questions}
-            calculateMaxPoints={calculateMaxPoints}
-            onSave={handleSave}
-            saving={saving}
-            isNewQuiz={true}
-          />
-        );
-
-      default:
-        return null;
-    }
+  // Prepare step renderer props
+  const stepRendererProps: StepRendererProps = {
+    step: activeStep,
+    control,
+    errors,
+    watchedValues,
+    availableTags,
+    isLoadingTags,
+    questions,
+    expandedAccordion,
+    onQuestionChange: handleQuestionChange,
+    onOptionChange: handleOptionChange,
+    onCorrectAnswerChange: handleCorrectAnswerChange,
+    onAddOption: handleAddOption,
+    onRemoveOption: handleRemoveOption,
+    onAddQuestion: handleAddQuestion,
+    onDeleteQuestion: handleDeleteQuestion,
+    onAccordionChange: handleAccordionChange,
+    isQuestionValid,
+    tags,
+    calculateMaxPoints,
+    onSave: handleSave,
+    saving,
+    isNewQuiz: true,
   };
 
-  return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Tooltip title="Back to Quizzes">
-            <IconButton onClick={handleBackToQuizzes} sx={{ mr: 2 }}>
-              <ArrowBackIcon />
-            </IconButton>
-          </Tooltip>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
-            Create Quiz
-          </Typography>
-        </Box>
-        
-        {/* Show draft indicator and start fresh button if there's saved data */}
-        {hasDraftData && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Chip 
-              label="Draft recovered" 
-              size="small" 
-              color="info" 
-              variant="outlined"
-            />
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={startFresh}
-              sx={{ borderRadius: 2, textTransform: 'none' }}
-            >
-              Start Fresh
-            </Button>
-          </Box>
-        )}
-      </Box>
+  // Title prefix - back button
+  const titlePrefix = (
+    <Tooltip title="Back to Quizzes">
+      <IconButton onClick={handleBackToQuizzes}>
+        <ArrowBackIcon />
+      </IconButton>
+    </Tooltip>
+  );
 
-      {/* Stepper */}
-      <Paper elevation={1} sx={{ p: 1, borderRadius: 3, mb: 1 }}>
-        <Stepper activeStep={activeStep} sx={{ mb: 1 }}>
-          {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
-      </Paper>
-
-      {/* Step Content */}
-      <Box sx={{ mb: 1 }}>
-        {isInitialized ? renderStepContent(activeStep) : (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-            <Typography variant="body1">Loading...</Typography>
-          </Box>
-        )}
-      </Box>
-
-      <WizardFooter
-        activeStep={activeStep}
-        totalSteps={steps.length}
-        onBack={handleBack}
-        onNext={handleNext}
+  // Header actions - draft controls
+  const headerActions = hasDraftData ? (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Chip 
+        label="Draft recovered" 
+        size="small" 
+        color="info" 
+        variant="outlined"
       />
-    </Container>
+      <Button
+        variant="outlined"
+        size="small"
+        onClick={startFresh}
+        sx={{ borderRadius: 2, textTransform: 'none' }}
+      >
+        Start Fresh
+      </Button>
+    </Box>
+  ) : null;
+
+  return (
+    <Wizard
+      title="Create Quiz"
+      steps={steps}
+      activeStep={activeStep}
+      onBack={handleBack}
+      onNext={handleNext}
+      isInitialized={isInitialized}
+      titlePrefix={titlePrefix}
+      headerActions={headerActions}
+    >
+      {renderStepContent(stepRendererProps)}
+    </Wizard>
   );
 };
 
