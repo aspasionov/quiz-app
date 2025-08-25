@@ -17,6 +17,8 @@ import PeopleIcon from '@mui/icons-material/People';
 import SecurityIcon from '@mui/icons-material/Security';
 import DevicesIcon from '@mui/icons-material/Devices';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { HEADER_HEIGHT } from '@/constans';
 
 export default function Home() {
@@ -74,6 +76,57 @@ export default function Home() {
             Create, share, and take quizzes easily. Perfect for learning, teaching, and having fun!
           </Typography>
         </Box>
+
+        {/* AI Quiz Feature */}
+        <Card sx={{ mb: 4, elevation: 2 }}>
+          <CardContent sx={{ p: 4 }}>
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <SmartToyIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+              <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                AI-Powered Quiz Generation
+              </Typography>
+              <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 800, mx: 'auto', lineHeight: 1.6 }}>
+                Experience the future of quiz creation with our advanced AI technology
+              </Typography>
+            </Box>
+            
+            <Grid container spacing={4} sx={{ alignItems: 'flex-start' }}>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Box sx={{ textAlign: 'center', height: '100%' }}>
+                  <AutoAwesomeIcon sx={{ fontSize: 48, mb: 2, color: 'primary.main' }} />
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
+                    Smart Question Generation
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                    Our AI creates intelligent, contextually relevant questions on any topic you specify. Just provide a subject, and watch as custom quizzes are generated instantly.
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Box sx={{ textAlign: 'center', height: '100%' }}>
+                  <SmartToyIcon sx={{ fontSize: 48, mb: 2, color: 'primary.main' }} />
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
+                    Adaptive Difficulty
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                    The AI adjusts question difficulty based on your performance and learning level, ensuring an optimal challenge that promotes effective learning.
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Box sx={{ textAlign: 'center', height: '100%' }}>
+                  <AutoAwesomeIcon sx={{ fontSize: 48, mb: 2, color: 'primary.main' }} />
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
+                    Instant Feedback
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                    Get detailed explanations for answers, personalized learning insights, and AI-powered suggestions to improve your knowledge retention.
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
         {/* What You Can Do */}
         <Card sx={{ mb: 4, elevation: 2 }}>
