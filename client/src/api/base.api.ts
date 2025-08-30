@@ -29,8 +29,15 @@ api.interceptors.response.use(
     const { showSnackbar } = useSnackBarStore.getState();
 
     if (status === 400) {
-      const errors = error.response?.data?.errors.map(Object.values)?.join(', ');
-      showSnackbar(errors || fallbackMessage, 'error');
+      const errors = error.response?.data?.errors;
+      if (errors && Array.isArray(errors)) {
+        const errorMessages = errors.map(Object.values)?.join(', ');
+        showSnackbar(errorMessages || fallbackMessage, 'error');
+      } else {
+        // Handle case where there's a single error message
+        const errorMessage = error.response?.data?.message || fallbackMessage;
+        showSnackbar(errorMessage, 'error');
+      }
     }
 
     if (status === 403) {

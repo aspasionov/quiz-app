@@ -118,7 +118,7 @@ const AiQuizPage = () => {
       if (response.success) {
         showSnackbar('AI quiz generated successfully!', 'success');
         // Redirect to the quiz taking page with source parameter
-        router.push(`/quizzes/${response.data.quizId}?source=ai-quiz`);
+        router.push(`/quizzes/${response.data.quizId}?source=quiz-generator`);
       } else {
         showSnackbar(response.message || 'Failed to generate quiz', 'error');
       }
@@ -202,7 +202,7 @@ const AiQuizPage = () => {
           sx={{ mb: 3, borderRadius: 2 }}
         >
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            Daily AI Quiz Generation: {attemptInfo.attemptsUsed}/3 attempts used today
+            Daily AI Quiz Generation: {attemptInfo.attemptsUsed}/{attemptInfo.attemptsUsed + attemptInfo.remainingAttempts} attempts used today
           </Typography>
           <Typography variant="body2">
             {attemptInfo.remainingAttempts > 0 

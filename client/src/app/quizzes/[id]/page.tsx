@@ -182,8 +182,8 @@ const QuizTakingPage = () => {
   };
 
   const handleBackToQuizzes = () => {
-    if (source === 'ai-quiz') {
-      router.push('/ai-quiz');
+    if (source === 'quiz-generator') {
+      router.push('/quiz-generator');
     } else {
       router.push('/quizzes');
     }
@@ -339,7 +339,7 @@ const QuizTakingPage = () => {
                   fontWeight: 600
                 }}
               >
-                {source === 'ai-quiz' ? 'Back' : 'Back to Quizzes'}
+                {source === 'quiz-generator' ? 'Back' : 'Back to Quizzes'}
               </Button>
             </Box>
           </CardContent>
@@ -355,7 +355,7 @@ const QuizTakingPage = () => {
     <Container maxWidth="md" sx={{ py: 4 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Tooltip title={source === 'ai-quiz' ? 'Back to AI Quiz' : 'Back to Quizzes'}>
+        <Tooltip title={source === 'quiz-generator' ? 'Back to Quiz Generator' : 'Back to Quizzes'}>
           <IconButton onClick={handleBackToQuizzes} sx={{ mr: 2 }}>
             <ArrowBackIcon />
           </IconButton>

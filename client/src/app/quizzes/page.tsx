@@ -129,7 +129,6 @@ const QuizzesPage = () => {
   // Calculate user quiz count from loaded quizzes
   useEffect(() => {
     if (user && quizzes.length > 0 && !isLoading) {
-      console.log('Calculating user quiz count from loaded quizzes');
       const userQuizzes = quizzes.filter(quiz => isQuizOwner(quiz));
       const quizCount = {
         count: userQuizzes.length,
@@ -137,12 +136,10 @@ const QuizzesPage = () => {
         remaining: Math.max(0, 10 - userQuizzes.length)
       };
       setUserQuizCount(quizCount);
-      console.log('User quiz count calculated:', quizCount);
     }
   }, [user, quizzes, isLoading]);
 
   const handleCreateQuiz = () => {
-    console.log('Create quiz clicked, userQuizCount:', userQuizCount);
     
     // If we don't have quiz count data, try to calculate from current quizzes
     if (!userQuizCount && user && quizzes.length > 0) {
@@ -153,7 +150,6 @@ const QuizzesPage = () => {
         remaining: Math.max(0, 10 - userQuizzes.length)
       };
       setUserQuizCount(calculatedCount);
-      console.log('Calculated quiz count on create click:', calculatedCount);
       
       // Check limit with calculated count
       if (calculatedCount.remaining <= 0) {

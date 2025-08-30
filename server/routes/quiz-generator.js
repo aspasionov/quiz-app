@@ -3,11 +3,12 @@ const OpenAI = require('openai');
 const Quiz = require('../models/quiz');
 const AiQuizAttempt = require('../models/aiQuizAttempt');
 const auth = require('../helper/auth');
+const { aiQuizLimiter } = require('../middleware/rateLimiting');
 
 const router = express.Router();
 
 // Generate AI quiz from text
-router.post('/generate', auth, async (req, res) => {
+router.post('/generate', aiQuizLimiter, auth, async (req, res) => {
   try {
     const { text, topic } = req.body;
     const mode = text ? 'text' : 'topic';
@@ -61,7 +62,7 @@ router.post('/generate', auth, async (req, res) => {
     if (!attemptCheck.canAttempt) {
       return res.status(429).json({
         success: false,
-        message: 'Daily limit reached. You can generate up to 3 AI quizzes per day. Try again tomorrow.',
+        message: 'Daily limit reached. You can generate up to 10 AI quizzes per day. Try again tomorrow.',
         data: {
           attemptsUsed: attemptCheck.attemptsUsed,
           remainingAttempts: attemptCheck.remainingAttempts

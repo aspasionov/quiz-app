@@ -22,7 +22,7 @@ const aiQuizAttemptSchema = new mongoose.Schema({
   attempts: {
     type: Number,
     default: 0,
-    max: 3 // Maximum 3 attempts per day
+    max: 10 // Maximum 10 attempts per day
   },
   lastAttemptAt: {
     type: Date,
@@ -48,12 +48,12 @@ aiQuizAttemptSchema.statics.canUserAttempt = async function(userId) {
   });
   
   if (!attemptRecord) {
-    return { canAttempt: true, remainingAttempts: 3 };
+    return { canAttempt: true, remainingAttempts: 10 };
   }
   
-  const remainingAttempts = Math.max(0, 3 - attemptRecord.attempts);
+  const remainingAttempts = Math.max(0, 10 - attemptRecord.attempts);
   return {
-    canAttempt: attemptRecord.attempts < 3,
+    canAttempt: attemptRecord.attempts < 10,
     remainingAttempts: remainingAttempts,
     attemptsUsed: attemptRecord.attempts
   };
@@ -95,17 +95,17 @@ aiQuizAttemptSchema.statics.getUserAttemptInfo = async function(userId) {
   if (!attemptRecord) {
     return {
       attemptsUsed: 0,
-      remainingAttempts: 3,
+      remainingAttempts: 10,
       canAttempt: true,
       resetsAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1) // Next day at 00:00
     };
   }
   
-  const remainingAttempts = Math.max(0, 3 - attemptRecord.attempts);
+  const remainingAttempts = Math.max(0, 10 - attemptRecord.attempts);
   return {
     attemptsUsed: attemptRecord.attempts,
     remainingAttempts: remainingAttempts,
-    canAttempt: attemptRecord.attempts < 3,
+    canAttempt: attemptRecord.attempts < 10,
     lastAttemptAt: attemptRecord.lastAttemptAt,
     resetsAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1) // Next day at 00:00
   };
