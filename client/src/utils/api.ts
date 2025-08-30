@@ -173,13 +173,13 @@ export const quizApi = {
   // Generate AI quiz from text or topic
   generateAiQuiz: async (content: string, mode: 'text' | 'topic' = 'text'): Promise<ApiResponse<{ quizId: string; quiz: Quiz }>> => {
     const payload = mode === 'text' ? { text: content } : { topic: content };
-    const response: AxiosResponse<ApiResponse<{ quizId: string; quiz: Quiz }>> = await api.post('/api/ai-quiz/generate', payload);
+    const response: AxiosResponse<ApiResponse<{ quizId: string; quiz: Quiz }>> = await api.post('/api/quiz-generator/generate', payload);
     return response.data;
   },
 
   // Get user's AI quiz attempt information
   getAttemptInfo: async (): Promise<ApiResponse<{ attemptsUsed: number; remainingAttempts: number; canAttempt: boolean; resetsAt?: Date }>> => {
-    const response: AxiosResponse<ApiResponse<{ attemptsUsed: number; remainingAttempts: number; canAttempt: boolean; resetsAt?: Date }>> = await api.get('/api/ai-quiz/attempts');
+    const response: AxiosResponse<ApiResponse<{ attemptsUsed: number; remainingAttempts: number; canAttempt: boolean; resetsAt?: Date }>> = await api.get('/api/quiz-generator/attempts');
     return response.data;
   },
 };

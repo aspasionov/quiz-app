@@ -2,6 +2,7 @@ const { Router } = require('express');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
+const { authLimiter } = require('../middleware/rateLimiting');
 
 const router = Router();
 
@@ -49,7 +50,7 @@ router.get('/google', (req, res) => {
 });
 
 // Google OAuth callback route
-router.get('/google/callback', async (req, res) => {
+router.get('/google/callback', authLimiter, async (req, res) => {
   try {
     const { code } = req.query;
     

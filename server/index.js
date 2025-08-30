@@ -3,11 +3,12 @@ const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
 const googleAuthRoutes = require('./routes/google-auth');
 const quizRoutes = require('./routes/quiz');
-const aiQuizRoutes = require('./routes/ai-quiz');
+const aiQuizRoutes = require('./routes/quiz-generator');
 const tagRoutes = require('./routes/tag');
 const path = require('path');
 const cors = require('cors');
-const dotenv = require('dotenv')
+const dotenv = require('dotenv');
+const { generalLimiter } = require('./middleware/rateLimiting');
 
 dotenv.config()
 const app = express()
@@ -20,11 +21,13 @@ app.use(cors({
   credentials: true,
 }));
 
+// Apply general rate limiting to all routes
+app.use(generalLimiter);
 
 app.use('/auth', authRoutes)
 app.use('/auth', googleAuthRoutes)
 app.use('/api/quiz', quizRoutes)
-app.use('/api/ai-quiz', aiQuizRoutes)
+app.use('/api/quiz-generator', aiQuizRoutes)
 app.use('/api/tags', tagRoutes)
 
 async function start() {

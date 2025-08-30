@@ -118,7 +118,7 @@ const AiQuizPage = () => {
       if (response.success) {
         showSnackbar('AI quiz generated successfully!', 'success');
         // Redirect to the quiz taking page with source parameter
-        router.push(`/quizzes/${response.data.quizId}?source=ai-quiz`);
+        router.push(`/quizzes/${response.data.quizId}?source=quiz-generator`);
       } else {
         showSnackbar(response.message || 'Failed to generate quiz', 'error');
       }
