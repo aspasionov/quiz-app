@@ -202,7 +202,7 @@ const AiQuizPage = () => {
           sx={{ mb: 3, borderRadius: 2 }}
         >
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            Daily AI Quiz Generation: {attemptInfo.attemptsUsed}/3 attempts used today
+            Daily AI Quiz Generation: {attemptInfo.attemptsUsed}/{attemptInfo.attemptsUsed + attemptInfo.remainingAttempts} attempts used today
           </Typography>
           <Typography variant="body2">
             {attemptInfo.remainingAttempts > 0 

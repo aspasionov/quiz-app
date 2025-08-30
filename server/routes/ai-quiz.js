@@ -61,7 +61,7 @@ router.post('/generate', auth, async (req, res) => {
     if (!attemptCheck.canAttempt) {
       return res.status(429).json({
         success: false,
-        message: 'Daily limit reached. You can generate up to 3 AI quizzes per day. Try again tomorrow.',
+        message: 'Daily limit reached. You can generate up to 10 AI quizzes per day. Try again tomorrow.',
         data: {
           attemptsUsed: attemptCheck.attemptsUsed,
           remainingAttempts: attemptCheck.remainingAttempts
