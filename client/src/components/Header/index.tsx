@@ -160,22 +160,34 @@ function ResponsiveAppBar() {
                 onClose={handleCloseNavMenu}
                 sx={{ display: { xs: 'block', md: 'none' } }}
               >
-                {pages.map((page) => (
-                  <MenuItem key={page} onClick={handleCloseNavMenu}>
-                    <Link href={page === 'home' ? '/' : `/${page}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
-                      <Typography 
-                        sx={{ 
-                          textAlign: 'left', 
-                          py: 0.5,
-                          color: 'inherit',
-                          fontWeight: 'normal'
-                        }}
-                      >
-                        {getPageDisplayName(page)}
-                      </Typography>
-                    </Link>
-                  </MenuItem>
-                ))}
+              {pages.map((page) => (
+                <MenuItem 
+                  key={page} 
+                  onClick={handleCloseNavMenu}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                    }
+                  }}
+                >
+                  <Link href={page === 'home' ? '/' : `/${page}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', cursor: 'pointer' }}>
+                    <Typography 
+                      sx={{ 
+                        textAlign: 'left', 
+                        py: 0.5,
+                        color: 'inherit',
+                        fontWeight: 'normal',
+                        transition: 'color 0.2s ease-in-out',
+                        '&:hover': {
+                          color: 'secondary.main',
+                        }
+                      }}
+                    >
+                      {getPageDisplayName(page)}
+                    </Typography>
+                  </Link>
+                </MenuItem>
+              ))}
               </Menu>
             </Box>
             <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
@@ -271,7 +283,13 @@ function ResponsiveAppBar() {
               alt="logo"
               width={40}
               height={40}
-              style={{ marginRight: '8px', cursor: 'pointer' }}
+              style={{ 
+                marginRight: '8px', 
+                cursor: 'pointer',
+                transition: 'opacity 0.2s ease-in-out',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
             />
           </Link>
           <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
@@ -302,14 +320,26 @@ function ResponsiveAppBar() {
               sx={{ display: { xs: 'block', md: 'none' } }}
             >
               {pages.map((page) => (
-                <MenuItem key={page} onClick={handleCloseNavMenu}>
-                  <Link href={page === 'home' ? '/' : `/${page}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
+                <MenuItem 
+                  key={page} 
+                  onClick={handleCloseNavMenu}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                    }
+                  }}
+                >
+                  <Link href={page === 'home' ? '/' : `/${page}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', cursor: 'pointer' }}>
                     <Typography 
                       sx={{ 
                         textAlign: 'left', 
                         py: 0.5,
                         color: isActivePage(page) ? 'secondary.main' : 'inherit',
-                        fontWeight: isActivePage(page) ? 'bold' : 'normal'
+                        fontWeight: isActivePage(page) ? 'bold' : 'normal',
+                        transition: 'color 0.2s ease-in-out',
+                        '&:hover': {
+                          color: 'secondary.main',
+                        }
                       }}
                     >
                       {getPageDisplayName(page)}
@@ -321,7 +351,7 @@ function ResponsiveAppBar() {
           </Box>
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
-              <Link key={page} href={page === 'home' ? '/' : `/${page}`} style={{ textDecoration: 'none' }}>
+              <Link key={page} href={page === 'home' ? '/' : `/${page}`} style={{ textDecoration: 'none', cursor: 'pointer' }}>
                 <Button
                   onClick={handleCloseNavMenu}
                   sx={{ 
@@ -331,6 +361,12 @@ function ResponsiveAppBar() {
                     fontWeight: isActivePage(page) ? 'bold' : 'normal',
                     position: 'relative',
                     textTransform: 'none',
+                    cursor: 'pointer',
+                    transition: 'color 0.2s ease-in-out',
+                    '&:hover': {
+                      color: 'secondary.main',
+                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    },
                     '&::after': isActivePage(page) ? {
                       content: '""',
                       position: 'absolute',
