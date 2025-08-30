@@ -28,8 +28,8 @@ import { authApi } from '@/utils/api';
 
 
 
-const authenticatedPages = ['quizzes', 'ai-quiz'];
-const unauthenticatedPages = ['login']; // Only login since register redirects to login
+const authenticatedPages = ['home', 'quizzes', 'quiz-generator', 'contact'];
+const unauthenticatedPages = ['home', 'login', 'contact']; // Only login since register redirects to login
 
 function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
@@ -50,12 +50,16 @@ function ResponsiveAppBar() {
   // Function to get display name for navigation items
   const getPageDisplayName = (page: string) => {
     switch (page) {
-      case 'ai-quiz':
-        return 'AI Quiz';
+      case 'home':
+        return 'Home';
+      case 'quiz-generator':
+        return 'Quiz Generator';
       case 'quizzes':
         return 'Quizzes';
       case 'login':
         return 'Login';
+      case 'contact':
+        return 'Contact';
       default:
         return page.charAt(0).toUpperCase() + page.slice(1);
     }
@@ -64,6 +68,9 @@ function ResponsiveAppBar() {
   // Function to check if a page is currently active
   const isActivePage = (page: string) => {
     if (!isClient) return false; // Prevent hydration mismatch
+    if (page === 'home') {
+      return pathname === '/' || pathname === '/home';
+    }
     return pathname === `/${page}` || (page === 'quizzes' && pathname.startsWith('/quizzes'));
   };
 
@@ -155,7 +162,7 @@ function ResponsiveAppBar() {
               >
                 {pages.map((page) => (
                   <MenuItem key={page} onClick={handleCloseNavMenu}>
-                    <Link href={`/${page}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
+                    <Link href={page === 'home' ? '/' : `/${page}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
                       <Typography 
                         sx={{ 
                           textAlign: 'left', 
@@ -173,7 +180,7 @@ function ResponsiveAppBar() {
             </Box>
             <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
               {pages.map((page) => (
-                <Link key={page} href={`/${page}`} style={{ textDecoration: 'none' }}>
+                <Link key={page} href={page === 'home' ? '/' : `/${page}`} style={{ textDecoration: 'none' }}>
                   <Button
                     onClick={handleCloseNavMenu}
                     sx={{ 
@@ -296,7 +303,7 @@ function ResponsiveAppBar() {
             >
               {pages.map((page) => (
                 <MenuItem key={page} onClick={handleCloseNavMenu}>
-                  <Link href={`/${page}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
+                  <Link href={page === 'home' ? '/' : `/${page}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
                     <Typography 
                       sx={{ 
                         textAlign: 'left', 
@@ -314,7 +321,7 @@ function ResponsiveAppBar() {
           </Box>
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
-              <Link key={page} href={`/${page}`} style={{ textDecoration: 'none' }}>
+              <Link key={page} href={page === 'home' ? '/' : `/${page}`} style={{ textDecoration: 'none' }}>
                 <Button
                   onClick={handleCloseNavMenu}
                   sx={{ 
