@@ -31,6 +31,7 @@ import { withAuth } from '@/components/WithAuth';
 import { quizApi, type Quiz } from '@/api/quiz.api';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 import useUserStore from '@/stores/useUserStore';
+import { MAIN_COLOR, SECOND_COLOR } from '@/constans';
 
 interface UserAnswer {
   questionId: string;
@@ -107,6 +108,37 @@ const QuizTakingPage = () => {
       return () => clearInterval(interval);
     }
   }, [startTime, showResults]);
+
+  useEffect(() => {
+
+    if(getScoreColor(quizResult?.percentage) === 'success') {
+      const end = Date.now() + 15 * 100;
+      const colors = [MAIN_COLOR, MAIN_COLOR];
+
+      (function frame() {
+        confetti({
+          particleCount: 2,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: colors,
+        });
+
+        confetti({
+          particleCount: 2,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: colors,
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      })();
+    }
+  }, [quizResult])
+
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -224,7 +256,7 @@ const QuizTakingPage = () => {
 
   if (showResults && quizResult) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container maxWidth="md" sx={{ py: 4, position: 'relative', zIndex: 999 }}>
         <Card elevation={3} sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 4, textAlign: 'center' }}>
             {/* Header */}
@@ -440,9 +472,8 @@ const QuizTakingPage = () => {
               />
             ))}
           </RadioGroup>
-
           {/* Explanation (if shown) */}
-          {showExplanation && currentQuestion.explanation && (
+          {showExplanation && currentQuestion.explanation !== '' && (
             <Box sx={{ mt: 3 }}>
               <Divider sx={{ mb: 2 }} />
               <Alert severity="info" sx={{ borderRadius: 2 }}>
@@ -457,7 +488,8 @@ const QuizTakingPage = () => {
 
       {/* Action Buttons */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Button
+        {!!currentQuestion.explanation && (
+          <Button
           variant="outlined"
           onClick={handleShowExplanation}
           disabled={!selectedOption || showExplanation}
@@ -469,6 +501,7 @@ const QuizTakingPage = () => {
         >
           Show Explanation
         </Button>
+        ) }
         <Button
           variant="contained"
           size="large"
@@ -477,6 +510,7 @@ const QuizTakingPage = () => {
           sx={{ 
             borderRadius: 2, 
             px: 4,
+            ml: 'auto',
             textTransform: 'none',
             fontWeight: 600
           }}

@@ -118,7 +118,7 @@ export default function Home() {
               Who Is This For?
             </Typography>
             <Grid container spacing={4}>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <List>
                   {benefits.slice(0, 3).map((benefit, index) => (
                     <ListItem key={index} sx={{ pl: 0 }}>
@@ -133,7 +133,7 @@ export default function Home() {
                   ))}
                 </List>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <List>
                   {benefits.slice(3).map((benefit, index) => (
                     <ListItem key={index + 3} sx={{ pl: 0 }}>
