@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import ThemeProvider from "@/components/ThemeProvider";
 import Header from "@/components/Header";
 import SnackBar from "@/components/SnackBar";
@@ -35,6 +36,12 @@ export default function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        <Script 
+          src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body className={dynaPuff.variable}>
         <ThemeProvider>
           <Header/>

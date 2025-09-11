@@ -300,7 +300,7 @@ const QuizzesPage = () => {
 
   // Loading skeleton component
   const QuizCardSkeleton = () => (
-    <Grid item sx={{ width: { xs: '100%', sm: '48%', md: '31%' }, minWidth: 280 }}>
+    <Grid sx={{ width: { xs: '100%', sm: '48%', md: '31%' }, minWidth: 280 }}>
       <Card elevation={2} sx={{ height: '100%', borderRadius: 3 }}>
         <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -462,7 +462,7 @@ const QuizzesPage = () => {
       {/* Quizzes Grid */}
       <Grid container spacing={3} sx={{ justifyContent: { xs: 'center', sm: 'flex-start' } }}>
         {filteredQuizzes.map((quiz) => (
-          <Grid item sx={{ width: { xs: '100%', sm: '48%', md: '31%' }, minWidth: 280 }} key={quiz._id}>
+          <Grid sx={{ width: { xs: '100%', sm: '48%', md: '31%' }, minWidth: 280 }} key={quiz._id}>
             <Card
               elevation={2}
               sx={{
