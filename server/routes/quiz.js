@@ -3,7 +3,6 @@ const { body } = require('express-validator');
 const Quiz = require('../models/quiz');
 const auth = require('../helper/auth');
 const { validationResult } = require('express-validator');
-const { quizLimiter } = require('../middleware/rateLimiting');
 
 const router = express.Router();
 
@@ -244,7 +243,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/quiz - Create new quiz
-router.post('/', quizLimiter, auth, quizValidation, async (req, res) => {
+router.post('/', auth, quizValidation, async (req, res) => {
   try {
     // Check validation results
     const errors = validationResult(req);
@@ -341,7 +340,7 @@ router.post('/', quizLimiter, auth, quizValidation, async (req, res) => {
 });
 
 // PUT /api/quiz/:id - Update quiz
-router.put('/:id', quizLimiter, auth, quizValidation, async (req, res) => {
+router.put('/:id', auth, quizValidation, async (req, res) => {
   try {
     // Check validation results
     const errors = validationResult(req);
@@ -441,7 +440,7 @@ router.put('/:id', quizLimiter, auth, quizValidation, async (req, res) => {
 });
 
 // DELETE /api/quiz/:id - Delete quiz
-router.delete('/:id', quizLimiter, auth, async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id);
     

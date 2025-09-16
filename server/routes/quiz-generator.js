@@ -3,12 +3,11 @@ const OpenAI = require('openai');
 const Quiz = require('../models/quiz');
 const AiQuizAttempt = require('../models/aiQuizAttempt');
 const auth = require('../helper/auth');
-const { aiQuizLimiter } = require('../middleware/rateLimiting');
 
 const router = express.Router();
 
 // Generate AI quiz from text
-router.post('/generate', aiQuizLimiter, auth, async (req, res) => {
+router.post('/generate', auth, async (req, res) => {
   try {
     const { text, topic } = req.body;
     const mode = text ? 'text' : 'topic';
