@@ -105,7 +105,7 @@ const QuizzesPage = () => {
     const fetchQuizzes = async () => {
       try {
         setIsLoading(true);
-        const response = await quizApi.getQuizzes();
+        const response = await quizApi.getQuizzes({ limit: 100 });
         
         if (response.success && response.data) {
           setQuizzes(response.data);
