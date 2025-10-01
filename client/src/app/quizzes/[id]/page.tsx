@@ -454,19 +454,21 @@ const QuizTakingPage = () => {
           {/* Options */}
           <RadioGroup
             value={selectedOption}
-            onChange={(e) => handleOptionChange(e.target.value)}
+            onChange={(e) => !showExplanation && handleOptionChange(e.target.value)}
           >
             {currentQuestion.options.map((option) => (
               <FormControlLabel
                 key={option._id}
                 value={option._id!}
-                control={<Radio />}
+                control={<Radio disabled={showExplanation} />}
                 label={option.text}
+                disabled={showExplanation}
                 sx={{
                   mb: 1,
                   '& .MuiFormControlLabel-label': {
                     fontSize: '1rem',
                     lineHeight: 1.4,
+                    color: showExplanation ? 'text.disabled' : 'text.primary',
                   },
                 }}
               />
