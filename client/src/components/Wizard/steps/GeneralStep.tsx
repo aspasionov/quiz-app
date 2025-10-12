@@ -91,45 +91,7 @@ export const GeneralStep = ({
 
           <Grid container spacing={1}>
             <Grid size={{ xs: 12, md: 6 }}>
-              <Controller
-                name="category"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    fullWidth
-                    size="small"
-                    label="Category"
-                    placeholder="e.g., Programming, Science, History"
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Controller
-                name="visibility"
-                control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="visibility-label">Visibility</InputLabel>
-                    <Select
-                      {...field}
-                      labelId="visibility-label"
-                      label="Visibility"
-                      size="small"
-                      sx={{ borderRadius: 2 }}
-                    >
-                      <MenuItem value="public">🌐 Public - Anyone can take</MenuItem>
-                      <MenuItem value="private">🔒 Private - Only you</MenuItem>
-                    </Select>
-                  </FormControl>
-                )}
-              />
-            </Grid>
-          </Grid>
-
-          <Controller
+            <Controller
             name="tags"
             control={control}
             render={({ field, fieldState }) => (
@@ -220,6 +182,29 @@ export const GeneralStep = ({
               />
             )}
           />
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Controller
+                name="visibility"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="visibility-label">Visibility</InputLabel>
+                    <Select
+                      {...field}
+                      labelId="visibility-label"
+                      label="Visibility"
+                      size="small"
+                      sx={{ borderRadius: 2 }}
+                    >
+                      <MenuItem value="public">🌐 Public - Anyone can take</MenuItem>
+                      <MenuItem value="private">🔒 Private - Only you</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+          </Grid>
         </Box>
       </CardContent>
     </Card>
