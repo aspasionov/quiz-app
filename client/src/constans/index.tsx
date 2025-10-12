@@ -15,3 +15,6 @@ export {
   QUIZ_FORM_STORAGE_KEY,
   QUIZ_STEP_STORAGE_KEY
 }
+
+export const authenticatedPages = ['home', 'quizzes', 'quiz-generator', 'contact'];
+export const unauthenticatedPages = ['home', 'login', 'contact'];
