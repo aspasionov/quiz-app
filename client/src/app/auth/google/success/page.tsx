@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import useUserStore from '@/stores/useUserStore';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 
-export default function GoogleAuthSuccess() {
+function GoogleAuthSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setUser } = useUserStore();
@@ -46,8 +46,10 @@ export default function GoogleAuthSuccess() {
           throw new Error('Failed to get user data');
         }
       } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const err = error as any;
         console.error('Google auth success handler error:', error);
-        console.error('Error details:', error.response?.data);
+        console.error('Error details:', err.response?.data);
         localStorage.removeItem('token');
         showSnackbar('Authentication failed. Please try again.', 'error');
         router.push('/login');
@@ -73,5 +75,29 @@ export default function GoogleAuthSuccess() {
         Completing sign in...
       </Typography>
     </Box>
+  );
+}
+
+export default function GoogleAuthSuccessPage() {
+  return (
+    <Suspense fallback={
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          gap: 2
+        }}
+      >
+        <CircularProgress size={40} />
+        <Typography variant="body1" color="text.secondary">
+          Completing sign in...
+        </Typography>
+      </Box>
+    }>
+      <GoogleAuthSuccessContent />
+    </Suspense>
   );
 }

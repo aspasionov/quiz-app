@@ -1,6 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+export const dynamic = 'force-dynamic';
+
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Box,
@@ -41,12 +43,11 @@ import {
   Lock as PrivateIcon,
   Quiz as QuizIcon,
 } from '@mui/icons-material';
-import { withAuth } from '@/components/WithAuth';
 import { quizApi, type Quiz } from '@/api/quiz.api';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 import useUserStore from '@/stores/useUserStore';
 
-const QuizzesPage = () => {
+function QuizzesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
@@ -742,6 +743,12 @@ const QuizzesPage = () => {
       </Dialog>
     </Container>
   );
-};
+}
 
-export default withAuth(QuizzesPage);
+export default function QuizzesPage() {
+  return (
+    <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><CircularProgress /></Box>}>
+      <QuizzesPageContent />
+    </Suspense>
+  );
+}

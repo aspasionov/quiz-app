@@ -17,7 +17,6 @@ import {
   Save as SaveIcon,
   Quiz as QuizIcon,
 } from '@mui/icons-material';
-import { withAuth } from '@/components/WithAuth';
 import { quizApi, type CreateQuizData } from '@/api/quiz.api';
 import { tagApi, type Tag } from '@/utils/api';
 import { Question, Option } from '@/types';
@@ -33,9 +32,9 @@ const quizInfoSchema = z.object({
   title: z.string()
     .min(1, 'Quiz title is required')
     .max(256, 'Quiz title must be less than 256 characters'),
-  description: z.string().optional(),
-  category: z.string().optional(),
-  visibility: z.enum(['public', 'private']),
+  description: z.string(),
+  category: z.string(),
+  visibility: z.enum(['public', 'private', 'selected']),
   tags: z.array(z.string())
     .min(1, 'Please add at least 1 tag')
     .refine((tags) => tags.every(tag => tag.length > 0), {
@@ -43,7 +42,7 @@ const quizInfoSchema = z.object({
     })
 });
 
-const QuizEditPage = () => {
+export default function QuizEditPage() {
   const params = useParams();
   const router = useRouter();
   const quizId = params.id as string;
@@ -198,9 +197,11 @@ const QuizEditPage = () => {
     const newQuestion = createEmptyQuestion();
     const newQuestions = [...questions, newQuestion];
     setQuestions(newQuestions);
-    
+
     // Auto-expand the newly added question
-    setExpandedAccordion(newQuestion._id);
+    if (newQuestion._id) {
+      setExpandedAccordion(newQuestion._id);
+    }
   };
 
   const handleDeleteQuestion = (index: number) => {
@@ -208,10 +209,10 @@ const QuizEditPage = () => {
       const questionToDelete = questions[index];
       const newQuestions = questions.filter((_, i) => i !== index);
       setQuestions(newQuestions);
-      
+
       // If we're deleting the expanded question, expand the first remaining question
       if (expandedAccordion === questionToDelete._id) {
-        setExpandedAccordion(newQuestions.length > 0 ? newQuestions[0]._id : false);
+        setExpandedAccordion(newQuestions.length > 0 && newQuestions[0]._id ? newQuestions[0]._id : false);
       }
     }
   };
@@ -393,9 +394,9 @@ const QuizEditPage = () => {
       } else {
         // Find the first invalid question and expand it
         const firstInvalidQuestion = questions.find(q => !isQuestionValid(q));
-        if (firstInvalidQuestion) {
+        if (firstInvalidQuestion && firstInvalidQuestion._id) {
           setExpandedAccordion(firstInvalidQuestion._id);
-          
+
           // Scroll to the invalid question after a brief delay
           setTimeout(() => {
             const questionIndex = questions.findIndex(q => q._id === firstInvalidQuestion._id);
@@ -569,6 +570,4 @@ const QuizEditPage = () => {
       {renderStepContent(stepRendererProps)}
     </Wizard>
   );
-};
-
-export default withAuth(QuizEditPage);
+}

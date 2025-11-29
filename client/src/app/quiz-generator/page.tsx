@@ -23,7 +23,6 @@ import {
   TextSnippet as TextIcon,
   Quiz as QuizIcon
 } from '@mui/icons-material';
-import { withAuth } from '@/components/WithAuth';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 import { quizApi } from '@/api/quiz.api';
 
@@ -57,7 +56,7 @@ const quizFormSchema = z.discriminatedUnion('mode', [textSchema, topicSchema]);
 
 type QuizFormData = z.infer<typeof quizFormSchema>;
 
-const AiQuizPage = () => {
+export default function AiQuizPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [attemptInfo, setAttemptInfo] = useState<AttemptInfo | null>(null);
   const [loadingAttempts, setLoadingAttempts] = useState(true);
@@ -93,7 +92,7 @@ const AiQuizPage = () => {
     const fetchAttemptInfo = async () => {
       try {
         const response = await quizApi.getAttemptInfo();
-        if (response.success) {
+        if (response.success && response.data) {
           setAttemptInfo(response.data);
         }
       } catch (error) {
@@ -114,7 +113,7 @@ const AiQuizPage = () => {
       const content = data.mode === 'text' ? data.text!.trim() : data.topic!.trim();
       const response = await quizApi.generateAiQuiz(content, data.mode);
 
-      if (response.success) {
+      if (response.success && response.data) {
         showSnackbar('AI quiz generated successfully!', 'success');
         // Redirect to the quiz taking page with source parameter
         router.push(`/quizzes/${response.data.quizId}?source=quiz-generator`);
@@ -340,7 +339,7 @@ The AI will create multiple-choice questions about your chosen topic."
                 type="submit"
                 variant="contained"
                 size="large"
-                disabled={isGenerating || !isValid || (attemptInfo && !attemptInfo.canAttempt)}
+                disabled={isGenerating || !isValid || (attemptInfo ? !attemptInfo.canAttempt : false)}
                 startIcon={isGenerating ? <CircularProgress size={20} color="inherit" /> : <QuizIcon />}
                 sx={{ 
                   borderRadius: 2,
@@ -390,6 +389,4 @@ The AI will create multiple-choice questions about your chosen topic."
       )}
     </Container>
   );
-};
-
-export default withAuth(AiQuizPage);
+}

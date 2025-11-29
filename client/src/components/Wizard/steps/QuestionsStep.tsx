@@ -71,11 +71,13 @@ export const QuestionsStep = ({
 
         {questions.map((question, questionIndex) => (
           <Box key={question._id} sx={{ position: 'relative' }}>
-            <Accordion 
+            <Accordion
               id={`question-${questionIndex}`}
               expanded={expandedAccordion === question._id}
               onChange={(event, isExpanded) => {
-                onAccordionChange(question._id, isExpanded);
+                if (question._id) {
+                  onAccordionChange(question._id, isExpanded);
+                }
               }}
               sx={{ 
                 mb: 1, 

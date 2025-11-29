@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import confetti from 'canvas-confetti';
 import {
   Box,
   Button,
@@ -27,7 +28,6 @@ import {
   Timer as TimerIcon,
   Star as StarIcon,
 } from '@mui/icons-material';
-import { withAuth } from '@/components/WithAuth';
 import { quizApi, type Quiz } from '@/api/quiz.api';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 import useUserStore from '@/stores/useUserStore';
@@ -49,7 +49,7 @@ interface QuizResult {
   answers: UserAnswer[];
 }
 
-const QuizTakingPage = () => {
+export default function QuizTakingPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -111,7 +111,7 @@ const QuizTakingPage = () => {
 
   useEffect(() => {
 
-    if(getScoreColor(quizResult?.percentage) === 'success') {
+    if(quizResult?.percentage !== undefined && getScoreColor(quizResult.percentage) === 'success') {
       const end = Date.now() + 15 * 100;
       const colors = [MAIN_COLOR, MAIN_COLOR];
 
@@ -265,10 +265,10 @@ const QuizTakingPage = () => {
                 icon={getScoreIcon(quizResult.percentage)}
                 label={`${quizResult.percentage.toFixed(1)}%`}
                 color={getScoreColor(quizResult.percentage) as 'success' | 'warning' | 'error'}
-                size="large"
-                sx={{ 
-                  fontSize: '1.2rem', 
-                  height: 48, 
+                size="medium"
+                sx={{
+                  fontSize: '1.2rem',
+                  height: 48,
                   mb: 2,
                   '& .MuiChip-icon': { fontSize: '1.5rem' }
                 }}
@@ -523,6 +523,4 @@ const QuizTakingPage = () => {
 
     </Container>
   );
-};
-
-export default withAuth(QuizTakingPage);
+}
