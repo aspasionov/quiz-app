@@ -12,8 +12,10 @@ lerna-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.server
 # But allow example files
 !.env.example
+!.env.server.example
 
 # Build outputs
 dist/
