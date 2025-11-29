@@ -38,8 +38,6 @@ interface GeneralStepProps {
 
 export const GeneralStep = ({
   control,
-  errors,
-  watchedValues,
   availableTags,
   isLoadingTags
 }: GeneralStepProps) => {

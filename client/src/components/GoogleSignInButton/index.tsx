@@ -3,9 +3,7 @@
 import React from 'react';
 import { Button } from '@mui/material';
 import { Google as GoogleIcon } from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
 import useSnackBarStore from '@/stores/useSnackBarStore';
-import useUserStore from '@/stores/useUserStore';
 
 interface GoogleSignInButtonProps {
   mode?: 'login' | 'register';
@@ -20,16 +18,14 @@ export default function GoogleSignInButton({
   variant = 'outlined',
   size = 'large'
 }: GoogleSignInButtonProps) {
-  const router = useRouter();
   const { showSnackbar } = useSnackBarStore();
-  const { setUser } = useUserStore();
 
   const handleGoogleSignIn = async () => {
     try {
       // Redirect to server's Google OAuth endpoint
       const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
       window.location.href = `${serverUrl}/auth/google`;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Google Sign-In error:', error);
       showSnackbar('Failed to sign in with Google', 'error');
     }

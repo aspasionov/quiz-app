@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import useUserStore from '@/stores/useUserStore';
 import useSnackBarStore from '@/stores/useSnackBarStore';
-import { authApi } from '@/utils/api';
 
 export default function GoogleAuthSuccess() {
   const router = useRouter();

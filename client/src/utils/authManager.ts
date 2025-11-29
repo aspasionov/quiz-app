@@ -4,6 +4,7 @@ import useUserStore from '@/stores/useUserStore';
 class AuthManager {
   private static instance: AuthManager;
   private isCurrentlyFetching = false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private fetchPromise: Promise<any> | null = null;
 
   static getInstance(): AuthManager {
@@ -13,6 +14,7 @@ class AuthManager {
     return AuthManager.instance;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async ensureAuthenticated(): Promise<any> {
     const { user, shouldRefetchUser, setLoading } = useUserStore.getState();
     

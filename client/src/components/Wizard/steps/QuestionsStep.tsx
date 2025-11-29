@@ -24,14 +24,15 @@ import {
   ExpandMore as ExpandMoreIcon,
   QuestionAnswer as QuestionIcon,
   Check as CheckIcon,
-  ArrowDownward as ArrowDownwardIcon,
 } from '@mui/icons-material';
 import { Question, Option } from '@/types';
 
 interface QuestionsStepProps {
   questions: Question[];
   expandedAccordion: string | false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onQuestionChange: (index: number, field: keyof Question, value: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onOptionChange: (questionIndex: number, optionIndex: number, field: keyof Option, value: any) => void;
   onCorrectAnswerChange: (questionIndex: number, optionIndex: number) => void;
   onAddOption: (questionIndex: number) => void;

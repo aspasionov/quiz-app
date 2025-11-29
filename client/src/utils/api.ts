@@ -37,6 +37,7 @@ api.interceptors.response.use(
   }
 );
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -200,7 +201,9 @@ export const authApi = {
   },
 
   // Get current user (if token exists)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getCurrentUser: async (): Promise<ApiResponse<any>> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response: AxiosResponse<ApiResponse<any>> = await api.get('/auth/me');
     return response.data;
   },

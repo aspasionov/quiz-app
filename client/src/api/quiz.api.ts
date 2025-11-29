@@ -2,6 +2,7 @@ import api from '@/api/base.api';
 import type { AxiosResponse } from 'axios';
 
 // Types and Interfaces
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;

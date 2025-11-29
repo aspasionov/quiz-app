@@ -31,7 +31,7 @@ import { withAuth } from '@/components/WithAuth';
 import { quizApi, type Quiz } from '@/api/quiz.api';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 import useUserStore from '@/stores/useUserStore';
-import { MAIN_COLOR, SECOND_COLOR } from '@/constans';
+import { MAIN_COLOR } from '@/constans';
 
 interface UserAnswer {
   questionId: string;

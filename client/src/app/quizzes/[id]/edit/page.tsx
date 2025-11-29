@@ -6,10 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
-  Box,
   Button,
   Container,
-  Typography,
   IconButton,
   Alert,
   Tooltip,
@@ -132,6 +130,7 @@ const QuizEditPage = () => {
     };
 
     fetchQuiz();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizId, showSnackbar, router]);
 
   // Load tags from database
@@ -217,26 +216,28 @@ const QuizEditPage = () => {
     }
   };
 
-  const handleQuestionChange = (index: number, field: keyof Question, value: any) => {
+  const handleQuestionChange = (index: number, field: keyof Question, value: unknown) => {
     const updatedQuestions = [...questions];
     updatedQuestions[index] = { ...updatedQuestions[index], [field]: value };
-    
+
     // If points field is being changed, update the correct option's points as well
     if (field === 'points') {
       const updatedOptions = [...updatedQuestions[index].options];
-      updatedOptions.forEach((option, i) => {
+      const pointsValue = (typeof value === 'number' ? value : 0) || 0;
+      updatedOptions.forEach((option) => {
         if (option.isCorrect) {
-          option.points = value || 0; // Set correct option to the new points value
+          option.points = pointsValue; // Set correct option to the new points value
         } else {
           option.points = 0; // Ensure incorrect options have 0 points
         }
       });
       updatedQuestions[index].options = updatedOptions;
     }
-    
+
     setQuestions(updatedQuestions);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleOptionChange = (questionIndex: number, optionIndex: number, field: keyof Option, value: any) => {
     const updatedQuestions = [...questions];
     const updatedOptions = [...updatedQuestions[questionIndex].options];
@@ -459,18 +460,21 @@ const QuizEditPage = () => {
       } else {
         throw new Error(response.message || 'Failed to save quiz');
       }
-    } catch (error: any) {
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
       console.error('Error saving quiz:', error);
-      
+
       // Handle specific error cases
-      if (error.response?.status === 401) {
+      if (err.response?.status === 401) {
         showSnackbar('You need to be logged in to save a quiz.', 'error');
         router.push('/login');
-      } else if (error.response?.status === 400) {
-        const errorMsg = error.response.data?.message || 'Validation failed';
-        const errors = error.response.data?.errors;
-        
+      } else if (err.response?.status === 400) {
+        const errorMsg = err.response.data?.message || 'Validation failed';
+        const errors = err.response.data?.errors;
+
         if (errors && errors.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const errorList = errors.map((err: any) => err.message).join(', ');
           showSnackbar(`Validation errors: ${errorList}`, 'error');
         } else {

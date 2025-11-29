@@ -70,8 +70,7 @@ const AiQuizPage = () => {
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isValid },
-    reset
+    formState: { errors, isValid }
   } = useForm<QuizFormData>({
     resolver: zodResolver(quizFormSchema),
     defaultValues: {
@@ -122,12 +121,14 @@ const AiQuizPage = () => {
       } else {
         showSnackbar(response.message || 'Failed to generate quiz', 'error');
       }
-    } catch (error: any) {
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
       console.error('Error generating quiz:', error);
-      
+
       // Handle specific error cases
-      if (error.response?.status === 400) {
-        const errorData = error.response.data;
+      if (err.response?.status === 400) {
+        const errorData = err.response.data;
         const errorMsg = errorData?.message || 'Failed to generate quiz';
         
         // Check if it's the quiz limit error
@@ -172,12 +173,6 @@ const AiQuizPage = () => {
       setValue('topic', '');
     }
   };
-
-  const exampleTexts = [
-    "The Renaissance was a period of renewed interest in art, science, and learning that began in Italy during the 14th century...",
-    "Photosynthesis is the process by which plants convert sunlight, carbon dioxide, and water into glucose and oxygen...",
-    "Machine learning is a subset of artificial intelligence that enables computers to learn and improve from experience..."
-  ];
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>

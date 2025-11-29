@@ -82,8 +82,8 @@ export default function Home() {
               What You Can Do
             </Typography>
             <Typography variant="h6" paragraph sx={{ lineHeight: 1.8, fontSize: '1.1rem', mb: 3 }}>
-              Our quiz platform makes it simple to create engaging quizzes and test your knowledge. 
-              Whether you're a teacher, student, trainer, or just someone who loves trivia, this app is for you!
+              Our quiz platform makes it simple to create engaging quizzes and test your knowledge.
+              Whether you&apos;re a teacher, student, trainer, or just someone who loves trivia, this app is for you!
             </Typography>
             
             {/* Features Grid */}

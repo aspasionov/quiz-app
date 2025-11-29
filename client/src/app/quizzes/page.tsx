@@ -39,7 +39,6 @@ import {
   Delete as DeleteIcon,
   Public as PublicIcon,
   Lock as PrivateIcon,
-  Group as GroupIcon,
   Quiz as QuizIcon,
 } from '@mui/icons-material';
 import { withAuth } from '@/components/WithAuth';
@@ -80,6 +79,7 @@ const QuizzesPage = () => {
       const tabIndex = getTabIndexFromName(urlTab);
       setTabValue(tabIndex);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // Update URL when tab changes
@@ -112,10 +112,12 @@ const QuizzesPage = () => {
         } else {
           showSnackbar('Failed to load quizzes', 'error');
         }
-      } catch (error: any) {
+      } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const err = error as any;
         console.error('Error fetching quizzes:', error);
         showSnackbar(
-          error.response?.data?.message || 'Error loading quizzes',
+          err.response?.data?.message || 'Error loading quizzes',
           'error'
         );
       } finally {
@@ -124,7 +126,8 @@ const QuizzesPage = () => {
     };
 
     fetchQuizzes();
-  }, []); // Remove showSnackbar from dependencies to prevent duplicate calls
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Calculate user quiz count from loaded quizzes
   useEffect(() => {
@@ -137,6 +140,7 @@ const QuizzesPage = () => {
       };
       setUserQuizCount(quizCount);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, quizzes, isLoading]);
 
   const handleCreateQuiz = () => {
@@ -209,17 +213,19 @@ const QuizzesPage = () => {
       } else {
         throw new Error(response.message || 'Failed to delete quiz');
       }
-    } catch (error: any) {
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
       console.error('Error deleting quiz:', error);
-      
-      if (error.response?.status === 401) {
+
+      if (err.response?.status === 401) {
         showSnackbar('You need to be logged in to delete quizzes.', 'error');
         router.push('/login');
-      } else if (error.response?.status === 403) {
+      } else if (err.response?.status === 403) {
         showSnackbar('You can only delete your own quizzes.', 'error');
       } else {
         showSnackbar(
-          error.response?.data?.message || 'Error deleting quiz. Please try again.',
+          err.response?.data?.message || 'Error deleting quiz. Please try again.',
           'error'
         );
       }
@@ -488,6 +494,7 @@ const QuizzesPage = () => {
                       icon={getVisibilityIcon(quiz.visibility)}
                       label={quiz.visibility}
                       size="small"
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       color={getVisibilityColor(quiz.visibility) as any}
                       variant="outlined"
                     />
@@ -708,7 +715,7 @@ const QuizzesPage = () => {
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete <strong>"{quizToDelete?.title}"</strong>?
+            Are you sure you want to delete <strong>&quot;{quizToDelete?.title}&quot;</strong>?
             This action cannot be undone.
           </DialogContentText>
         </DialogContent>
