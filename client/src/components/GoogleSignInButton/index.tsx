@@ -23,7 +23,7 @@ export default function GoogleSignInButton({
   const handleGoogleSignIn = async () => {
     try {
       // Redirect to server's Google OAuth endpoint
-      const serverUrl = process.env.CLIENT_URL || 'http://localhost:4000';
+      const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
       window.location.href = `${serverUrl}/auth/google`;
     } catch (error) {
       console.error('Google Sign-In error:', error);
