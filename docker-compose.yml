@@ -6,9 +6,12 @@ services:
     image: nginx:stable-alpine
     ports:
       - "80:80"
+      - "443:443"
 
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
 
     depends_on:
       - server
@@ -16,6 +19,7 @@ services:
 
     networks:
       - dev
+    restart: unless-stopped
 
   server:
     build:
