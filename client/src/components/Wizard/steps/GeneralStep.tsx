@@ -24,7 +24,7 @@ export interface QuizInfoFormData {
   title: string;
   description: string;
   category: string;
-  visibility: 'public' | 'private';
+  visibility: 'public' | 'private' | 'selected';
   tags: string[];
 }
 
@@ -38,8 +38,6 @@ interface GeneralStepProps {
 
 export const GeneralStep = ({
   control,
-  errors,
-  watchedValues,
   availableTags,
   isLoadingTags
 }: GeneralStepProps) => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +8,6 @@ import { z } from 'zod';
 import {
   Box,
   Button,
-  Typography,
   Chip,
   IconButton,
   Tooltip,
@@ -16,7 +15,6 @@ import {
 import {
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
-import { withAuth } from '@/components/WithAuth';
 import { Question, Option } from '@/types';
 import { quizApi, type CreateQuizData } from '@/api/quiz.api';
 import { tagApi, type Tag } from '@/utils/api';
@@ -33,29 +31,23 @@ const quizInfoSchema = z.object({
   title: z.string()
     .min(1, 'Quiz title is required')
     .max(256, 'Quiz title must be less than 256 characters'),
-  description: z.string().optional(),
-  category: z.string().optional(),
-  visibility: z.enum(['public', 'private']),
+  description: z.string(),
+  category: z.string(),
+  visibility: z.enum(['public', 'private', 'selected']),
   tags: z.array(z.string())
     .min(1, 'Please add at least 1 tag')
     .refine((tags) => tags.every(tag => tag.length > 0), {
       message: 'All tags must be non-empty'
     })
 });
-const CreateQuizPage = () => {
+
+function CreateQuizPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showSnackbar } = useSnackBarStore();
-  
-  // Get initial step from URL or default to 0
-  const getInitialStep = () => {
-    const stepFromUrl = searchParams.get('step');
-    const step = stepFromUrl ? parseInt(stepFromUrl, 10) : 0;
-    return step >= 0 && step < steps.length ? step : 0;
-  };
-  
+
   // Stepper state
-  const [activeStep, setActiveStep] = useState(getInitialStep);
+  const [activeStep, setActiveStep] = useState(0);
 
   // React Hook Form setup
   const {
@@ -96,6 +88,16 @@ const CreateQuizPage = () => {
   // ID counter to ensure consistent IDs
   const [idCounter, setIdCounter] = useState(1);
 
+  // Initialize active step from URL on client side
+  useEffect(() => {
+    const stepFromUrl = searchParams.get('step');
+    if (stepFromUrl) {
+      const step = parseInt(stepFromUrl, 10);
+      if (step >= 0 && step < steps.length) {
+        setActiveStep(step);
+      }
+    }
+  }, [searchParams]);
 
   const createEmptyQuestion = (questionId?: number): Question => {
     const qId = questionId || idCounter;
@@ -193,7 +195,9 @@ const CreateQuizPage = () => {
     setQuestions([firstQuestion]);
     setIdCounter(4);
     setActiveStep(0);
-    setExpandedAccordion(firstQuestion._id); // Auto-expand the first question
+    if (firstQuestion._id) {
+      setExpandedAccordion(firstQuestion._id); // Auto-expand the first question
+    }
     
     // Reset form to default values
     setValue('title', '');
@@ -254,7 +258,9 @@ const CreateQuizPage = () => {
         const firstQuestion = createEmptyQuestion(1);
         setQuestions([firstQuestion]);
         setIdCounter(4); // Start from 4 for next items (1 question + 2 options = 3, so next starts at 4)
-        setExpandedAccordion(firstQuestion._id); // Auto-expand the first question
+        if (firstQuestion._id) {
+          setExpandedAccordion(firstQuestion._id); // Auto-expand the first question
+        }
         
         // Reset form to default values if starting fresh
         if (startFresh) {
@@ -266,26 +272,27 @@ const CreateQuizPage = () => {
         }
       } else {
         // Data was loaded, expand the first question
-        if (questions.length > 0) {
+        if (questions.length > 0 && questions[0]._id) {
           setExpandedAccordion(questions[0]._id);
         }
       }
       
       setIsInitialized(true);
     }
-  }, [isInitialized, setValue, questions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitialized]);
 
   // Save to localStorage whenever questions or form data changes
   useEffect(() => {
     if (isInitialized) {
       saveToLocalStorage();
-      
+
       // Remove fresh parameter from URL after user starts working (has content)
-      const hasContent = watchedValues.title?.trim() || 
-                        watchedValues.description?.trim() || 
+      const hasContent = watchedValues.title?.trim() ||
+                        watchedValues.description?.trim() ||
                         (watchedValues.tags && watchedValues.tags.length > 0) ||
                         questions.some(q => q.questionText.trim() || q.options.some(opt => opt.text.trim()));
-      
+
       if (hasContent) {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('fresh') || urlParams.has('new')) {
@@ -296,17 +303,20 @@ const CreateQuizPage = () => {
         }
       }
     }
-  }, [questions, watchedValues, activeStep, isInitialized, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questions, watchedValues, activeStep, isInitialized]);
 
   // Question management
   const handleAddQuestion = () => {
     const newQuestion = createEmptyQuestion();
     const newQuestions = [...questions, newQuestion];
     setQuestions(newQuestions);
-    
+
     // Auto-expand the newly added question
-    setExpandedAccordion(newQuestion._id);
-    
+    if (newQuestion._id) {
+      setExpandedAccordion(newQuestion._id);
+    }
+
     // Auto-scroll to the newly added question after a short delay
     setTimeout(() => {
       const newQuestionIndex = newQuestions.length - 1;
@@ -326,34 +336,36 @@ const CreateQuizPage = () => {
       const questionToDelete = questions[index];
       const newQuestions = questions.filter((_, i) => i !== index);
       setQuestions(newQuestions);
-      
+
       // If we're deleting the expanded question, expand the first remaining question
       if (expandedAccordion === questionToDelete._id) {
-        setExpandedAccordion(newQuestions.length > 0 ? newQuestions[0]._id : false);
+        setExpandedAccordion(newQuestions.length > 0 && newQuestions[0]._id ? newQuestions[0]._id : false);
       }
     }
   };
 
-  const handleQuestionChange = (index: number, field: keyof Question, value: any) => {
+  const handleQuestionChange = (index: number, field: keyof Question, value: unknown) => {
     const updatedQuestions = [...questions];
     updatedQuestions[index] = { ...updatedQuestions[index], [field]: value };
-    
+
     // If points field is being changed, update the correct option's points as well
     if (field === 'points') {
       const updatedOptions = [...updatedQuestions[index].options];
-      updatedOptions.forEach((option, i) => {
+      const pointsValue = (typeof value === 'number' ? value : 0) || 0;
+      updatedOptions.forEach((option) => {
         if (option.isCorrect) {
-          option.points = value || 0; // Set correct option to the new points value
+          option.points = pointsValue; // Set correct option to the new points value
         } else {
           option.points = 0; // Ensure incorrect options have 0 points
         }
       });
       updatedQuestions[index].options = updatedOptions;
     }
-    
+
     setQuestions(updatedQuestions);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleOptionChange = (questionIndex: number, optionIndex: number, field: keyof Option, value: any) => {
     const updatedQuestions = [...questions];
     const updatedOptions = [...updatedQuestions[questionIndex].options];
@@ -464,7 +476,7 @@ const CreateQuizPage = () => {
   // Expand all invalid questions
   const expandInvalidQuestions = () => {
     const invalidQuestions = questions.filter(q => !isQuestionValid(q));
-    if (invalidQuestions.length > 0) {
+    if (invalidQuestions.length > 0 && invalidQuestions[0]._id) {
       // If there are invalid questions, expand the first one
       // (we can only expand one at a time with accordion)
       setExpandedAccordion(invalidQuestions[0]._id);
@@ -598,18 +610,20 @@ const CreateQuizPage = () => {
       } else {
         throw new Error(response.message || 'Failed to create quiz');
       }
-    } catch (error: any) {
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
       console.error('Error creating quiz:', error);
-      
+
       // Handle specific error cases
-      if (error.response?.status === 401) {
+      if (err.response?.status === 401) {
         showSnackbar('You need to be logged in to create a quiz.', 'error');
         router.push('/login');
-      } else if (error.response?.status === 400) {
-        const errorData = error.response.data;
+      } else if (err.response?.status === 400) {
+        const errorData = err.response.data;
         const errorMsg = errorData?.message || 'Validation failed';
         const errors = errorData?.errors;
-        
+
         // Check if it's the quiz limit error
         if (errorData?.error === 'QUIZ_LIMIT_REACHED') {
           showSnackbar(
@@ -621,6 +635,7 @@ const CreateQuizPage = () => {
             router.push('/quizzes?tab=my');
           }, 3000);
         } else if (errors && errors.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const errorList = errors.map((err: any) => err.message).join(', ');
           showSnackbar(`Validation errors: ${errorList}`, 'error');
         } else {
@@ -710,6 +725,12 @@ const CreateQuizPage = () => {
       {renderStepContent(stepRendererProps)}
     </Wizard>
   );
-};
+}
 
-export default withAuth(CreateQuizPage);
+export default function CreateQuizPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreateQuizPageContent />
+    </Suspense>
+  );
+}

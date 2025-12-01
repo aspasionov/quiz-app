@@ -4,8 +4,6 @@ import React from 'react';
 import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Link from '@mui/material/Link';
 import EmailIcon from '@mui/icons-material/Email';
 import { HEADER_HEIGHT } from '@/constans';
@@ -20,7 +18,7 @@ export default function Contact() {
             Contact Us
           </Typography>
           <Typography variant="h5" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto', lineHeight: 1.6, mt: 2 }}>
-            We're here to help! Get in touch with us for support, questions, or feedback.
+            We&apos;re here to help! Get in touch with us for support, questions, or feedback.
           </Typography>
         </Box>
 
@@ -30,8 +28,8 @@ export default function Contact() {
               Get in Touch
             </Typography>
             <Typography variant="h6" paragraph sx={{ lineHeight: 1.8, mb: 4, color: 'text.secondary' }}>
-              For any questions, support requests, or feedback about the Quiz App, 
-              please don't hesitate to reach out to us.
+              For any questions, support requests, or feedback about the Quiz App,
+              please don&apos;t hesitate to reach out to us.
             </Typography>
             
             <Box sx={{ 

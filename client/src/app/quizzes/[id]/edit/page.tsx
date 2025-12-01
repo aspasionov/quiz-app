@@ -6,10 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
-  Box,
   Button,
   Container,
-  Typography,
   IconButton,
   Alert,
   Tooltip,
@@ -19,7 +17,6 @@ import {
   Save as SaveIcon,
   Quiz as QuizIcon,
 } from '@mui/icons-material';
-import { withAuth } from '@/components/WithAuth';
 import { quizApi, type CreateQuizData } from '@/api/quiz.api';
 import { tagApi, type Tag } from '@/utils/api';
 import { Question, Option } from '@/types';
@@ -35,9 +32,9 @@ const quizInfoSchema = z.object({
   title: z.string()
     .min(1, 'Quiz title is required')
     .max(256, 'Quiz title must be less than 256 characters'),
-  description: z.string().optional(),
-  category: z.string().optional(),
-  visibility: z.enum(['public', 'private']),
+  description: z.string(),
+  category: z.string(),
+  visibility: z.enum(['public', 'private', 'selected']),
   tags: z.array(z.string())
     .min(1, 'Please add at least 1 tag')
     .refine((tags) => tags.every(tag => tag.length > 0), {
@@ -45,7 +42,7 @@ const quizInfoSchema = z.object({
     })
 });
 
-const QuizEditPage = () => {
+export default function QuizEditPage() {
   const params = useParams();
   const router = useRouter();
   const quizId = params.id as string;
@@ -132,6 +129,7 @@ const QuizEditPage = () => {
     };
 
     fetchQuiz();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizId, showSnackbar, router]);
 
   // Load tags from database
@@ -199,9 +197,11 @@ const QuizEditPage = () => {
     const newQuestion = createEmptyQuestion();
     const newQuestions = [...questions, newQuestion];
     setQuestions(newQuestions);
-    
+
     // Auto-expand the newly added question
-    setExpandedAccordion(newQuestion._id);
+    if (newQuestion._id) {
+      setExpandedAccordion(newQuestion._id);
+    }
   };
 
   const handleDeleteQuestion = (index: number) => {
@@ -209,34 +209,36 @@ const QuizEditPage = () => {
       const questionToDelete = questions[index];
       const newQuestions = questions.filter((_, i) => i !== index);
       setQuestions(newQuestions);
-      
+
       // If we're deleting the expanded question, expand the first remaining question
       if (expandedAccordion === questionToDelete._id) {
-        setExpandedAccordion(newQuestions.length > 0 ? newQuestions[0]._id : false);
+        setExpandedAccordion(newQuestions.length > 0 && newQuestions[0]._id ? newQuestions[0]._id : false);
       }
     }
   };
 
-  const handleQuestionChange = (index: number, field: keyof Question, value: any) => {
+  const handleQuestionChange = (index: number, field: keyof Question, value: unknown) => {
     const updatedQuestions = [...questions];
     updatedQuestions[index] = { ...updatedQuestions[index], [field]: value };
-    
+
     // If points field is being changed, update the correct option's points as well
     if (field === 'points') {
       const updatedOptions = [...updatedQuestions[index].options];
-      updatedOptions.forEach((option, i) => {
+      const pointsValue = (typeof value === 'number' ? value : 0) || 0;
+      updatedOptions.forEach((option) => {
         if (option.isCorrect) {
-          option.points = value || 0; // Set correct option to the new points value
+          option.points = pointsValue; // Set correct option to the new points value
         } else {
           option.points = 0; // Ensure incorrect options have 0 points
         }
       });
       updatedQuestions[index].options = updatedOptions;
     }
-    
+
     setQuestions(updatedQuestions);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleOptionChange = (questionIndex: number, optionIndex: number, field: keyof Option, value: any) => {
     const updatedQuestions = [...questions];
     const updatedOptions = [...updatedQuestions[questionIndex].options];
@@ -392,9 +394,9 @@ const QuizEditPage = () => {
       } else {
         // Find the first invalid question and expand it
         const firstInvalidQuestion = questions.find(q => !isQuestionValid(q));
-        if (firstInvalidQuestion) {
+        if (firstInvalidQuestion && firstInvalidQuestion._id) {
           setExpandedAccordion(firstInvalidQuestion._id);
-          
+
           // Scroll to the invalid question after a brief delay
           setTimeout(() => {
             const questionIndex = questions.findIndex(q => q._id === firstInvalidQuestion._id);
@@ -459,18 +461,21 @@ const QuizEditPage = () => {
       } else {
         throw new Error(response.message || 'Failed to save quiz');
       }
-    } catch (error: any) {
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
       console.error('Error saving quiz:', error);
-      
+
       // Handle specific error cases
-      if (error.response?.status === 401) {
+      if (err.response?.status === 401) {
         showSnackbar('You need to be logged in to save a quiz.', 'error');
         router.push('/login');
-      } else if (error.response?.status === 400) {
-        const errorMsg = error.response.data?.message || 'Validation failed';
-        const errors = error.response.data?.errors;
-        
+      } else if (err.response?.status === 400) {
+        const errorMsg = err.response.data?.message || 'Validation failed';
+        const errors = err.response.data?.errors;
+
         if (errors && errors.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const errorList = errors.map((err: any) => err.message).join(', ');
           showSnackbar(`Validation errors: ${errorList}`, 'error');
         } else {
@@ -565,6 +570,4 @@ const QuizEditPage = () => {
       {renderStepContent(stepRendererProps)}
     </Wizard>
   );
-};
-
-export default withAuth(QuizEditPage);
+}

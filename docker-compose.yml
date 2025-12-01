@@ -16,6 +16,7 @@ services:
 
     networks:
       - dev
+    restart: unless-stopped
 
   server:
     build:
@@ -23,11 +24,11 @@ services:
       args:
         NODE_ENV: production
 
-    # Load environment variables from .env.server file
+    # Load environment variables from server/.env file
     env_file:
-      - .env.server
+      - ./server/.env
 
-    # Override or add environment variables (for sensitive data, use .env.server instead)
+    # Override or add environment variables
     environment:
       NODE_ENV: production
       PORT: ${PORT:-8080}
@@ -41,6 +42,11 @@ services:
   client:
     build:
       context: ./client
+
+    # Load environment variables from client/.env file
+    env_file:
+      - ./client/.env
+
     networks:
       - dev
     restart: unless-stopped

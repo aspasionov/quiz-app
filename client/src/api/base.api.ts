@@ -4,7 +4,7 @@ import useSnackBarStore from '@/stores/useSnackBarStore';
 const fallbackMessage = 'Something went wrong';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
   // withCredentials: true,
 });
 

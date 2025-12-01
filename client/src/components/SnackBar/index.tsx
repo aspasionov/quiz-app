@@ -1,9 +1,8 @@
 'use client'
-import Snackbar, { SnackbarCloseReason } from '@mui/material/Snackbar';
+import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 
 import useSnackBarStore from '@/stores/useSnackBarStore';
-import { MAIN_COLOR, SECOND_COLOR } from '@/constans';
 
 
 export default function SnackBar() {

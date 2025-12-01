@@ -8,6 +8,7 @@ import api from '@/api/base.api';
 import { authManager } from '@/utils/authManager';
 
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withAuth<T extends Record<string, any>>(
   Component: React.ComponentType<T>
 ) {

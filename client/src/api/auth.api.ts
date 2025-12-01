@@ -11,20 +11,20 @@ const setCredentials = (user: {token: string} & User) => {
 }
 
 export const registerUser = async (data: User) => {
-  const response = await api.post('auth/register', data);
+  const response = await api.post('/auth/register', data);
   setCredentials(response.data);
   return response.data;
 };
 
 export const loginUser = async (email: string, password: string) => {
-  const response = await api.post('auth/login', { email, password });
+  const response = await api.post('/auth/login', { email, password });
   // Server returns data directly with token included
   setCredentials(response.data);
   return response.data;
 };
 
 export const getUser = async () => {
-  const response = await api.get('auth/me');
+  const response = await api.get('/auth/me');
   // The server now returns {success: true, data: userData} format
   if (response.data.success && response.data.data) {
     const userData = response.data.data;

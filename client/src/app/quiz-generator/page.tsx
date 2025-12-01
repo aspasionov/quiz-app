@@ -23,7 +23,6 @@ import {
   TextSnippet as TextIcon,
   Quiz as QuizIcon
 } from '@mui/icons-material';
-import { withAuth } from '@/components/WithAuth';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 import { quizApi } from '@/api/quiz.api';
 
@@ -57,7 +56,7 @@ const quizFormSchema = z.discriminatedUnion('mode', [textSchema, topicSchema]);
 
 type QuizFormData = z.infer<typeof quizFormSchema>;
 
-const AiQuizPage = () => {
+export default function AiQuizPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [attemptInfo, setAttemptInfo] = useState<AttemptInfo | null>(null);
   const [loadingAttempts, setLoadingAttempts] = useState(true);
@@ -70,8 +69,7 @@ const AiQuizPage = () => {
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isValid },
-    reset
+    formState: { errors, isValid }
   } = useForm<QuizFormData>({
     resolver: zodResolver(quizFormSchema),
     defaultValues: {
@@ -94,7 +92,7 @@ const AiQuizPage = () => {
     const fetchAttemptInfo = async () => {
       try {
         const response = await quizApi.getAttemptInfo();
-        if (response.success) {
+        if (response.success && response.data) {
           setAttemptInfo(response.data);
         }
       } catch (error) {
@@ -115,19 +113,21 @@ const AiQuizPage = () => {
       const content = data.mode === 'text' ? data.text!.trim() : data.topic!.trim();
       const response = await quizApi.generateAiQuiz(content, data.mode);
 
-      if (response.success) {
+      if (response.success && response.data) {
         showSnackbar('AI quiz generated successfully!', 'success');
         // Redirect to the quiz taking page with source parameter
         router.push(`/quizzes/${response.data.quizId}?source=quiz-generator`);
       } else {
         showSnackbar(response.message || 'Failed to generate quiz', 'error');
       }
-    } catch (error: any) {
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
       console.error('Error generating quiz:', error);
-      
+
       // Handle specific error cases
-      if (error.response?.status === 400) {
-        const errorData = error.response.data;
+      if (err.response?.status === 400) {
+        const errorData = err.response.data;
         const errorMsg = errorData?.message || 'Failed to generate quiz';
         
         // Check if it's the quiz limit error
@@ -172,12 +172,6 @@ const AiQuizPage = () => {
       setValue('topic', '');
     }
   };
-
-  const exampleTexts = [
-    "The Renaissance was a period of renewed interest in art, science, and learning that began in Italy during the 14th century...",
-    "Photosynthesis is the process by which plants convert sunlight, carbon dioxide, and water into glucose and oxygen...",
-    "Machine learning is a subset of artificial intelligence that enables computers to learn and improve from experience..."
-  ];
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -345,7 +339,7 @@ The AI will create multiple-choice questions about your chosen topic."
                 type="submit"
                 variant="contained"
                 size="large"
-                disabled={isGenerating || !isValid || (attemptInfo && !attemptInfo.canAttempt)}
+                disabled={isGenerating || !isValid || (attemptInfo ? !attemptInfo.canAttempt : false)}
                 startIcon={isGenerating ? <CircularProgress size={20} color="inherit" /> : <QuizIcon />}
                 sx={{ 
                   borderRadius: 2,
@@ -395,6 +389,4 @@ The AI will create multiple-choice questions about your chosen topic."
       )}
     </Container>
   );
-};
-
-export default withAuth(AiQuizPage);
+}
