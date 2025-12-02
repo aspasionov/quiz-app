@@ -1,70 +1,34 @@
 'use client'
-
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
-import useUserStore from '@/stores/useUserStore';
-import api from '@/api/base.api';
-import { authManager } from '@/utils/authManager';
+import { useEffect, useState } from 'react';
 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withAuth(Component: React.ComponentType<any>) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const AuthComponent = (props?: any) => {
-    const { user, isLoading } = useUserStore();
+  const WithAuthComponent = (props: any) => {
     const router = useRouter();
-    const hasInitialized = useRef(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-      const checkAuth = async () => {
-        // Prevent duplicate initialization
-        if (hasInitialized.current) return;
-        hasInitialized.current = true;
-        
-        const token = localStorage.getItem('token');
-        if (!token) {
-          router.push('/login');
-          return;
-        }
-
-        try {
-          // Set up API authorization header
-          api.defaults.headers.common.Authorization = `Bearer ${token}`;
-          
-          // Use centralized auth manager to ensure no duplicate calls
-          await authManager.ensureAuthenticated();
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          localStorage.removeItem('token');
-          authManager.clearAuthCache();
-          router.push('/login');
-        }
-      };
-
-      checkAuth();
+      // Replace with your actual authentication check
+      const token = localStorage.getItem('token');
+      if (token) {
+        // You might want to validate the token with an API call here
+        setIsAuthenticated(true);
+      } else {
+        router.push('/login'); // Redirect to login page
+      }
     }, [router]);
 
-    // Show loading state while checking authentication
-    if (isLoading || !hasInitialized.current) {
-      return (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          fontSize: '16px',
-          color: '#999'
-        }}>
-          Loading...
-        </div>
-      );
+    if (!isAuthenticated) {
+      return null;
     }
-
-    if (!user) return null;
 
     return <Component {...props} />;
   };
 
-  return AuthComponent;
+  WithAuthComponent.displayName = `WithAuth(${Component.displayName || Component.name || 'Component'})`;
+  return WithAuthComponent;
 }
