@@ -9,10 +9,9 @@ import { authManager } from '@/utils/authManager';
 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function withAuth<T extends Record<string, any>>(
-  Component: React.ComponentType<T>
-) {
-  const AuthComponent = (props: T) => {
+export function withAuth(Component: React.ComponentType<any>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const AuthComponent = (props?: any) => {
     const { user, isLoading } = useUserStore();
     const router = useRouter();
     const hasInitialized = useRef(false);
