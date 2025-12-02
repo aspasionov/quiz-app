@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
+import { withAuth } from '@/components/WithAuth';
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -745,10 +746,12 @@ function QuizzesPageContent() {
   );
 }
 
-export default function QuizzesPage() {
+function QuizzesPageWrapper() {
   return (
     <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><CircularProgress /></Box>}>
       <QuizzesPageContent />
     </Suspense>
   );
 }
+
+export default withAuth(QuizzesPageWrapper);

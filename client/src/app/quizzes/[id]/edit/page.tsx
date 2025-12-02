@@ -42,7 +42,9 @@ const quizInfoSchema = z.object({
     })
 });
 
-export default function QuizEditPage() {
+import { withAuth } from '@/components/WithAuth';
+
+function QuizEditPageContent() {
   const params = useParams();
   const router = useRouter();
   const quizId = params.id as string;
@@ -571,3 +573,5 @@ export default function QuizEditPage() {
     </Wizard>
   );
 }
+
+export default withAuth(QuizEditPageContent);

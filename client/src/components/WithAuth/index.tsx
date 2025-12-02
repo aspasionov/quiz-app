@@ -47,8 +47,19 @@ export function withAuth<T extends Record<string, any>>(
     }, [router]);
 
     // Show loading state while checking authentication
-    if (isLoading || (!hasInitialized.current && !user)) {
-      return null; // or a loading spinner
+    if (isLoading || !hasInitialized.current) {
+      return (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontSize: '16px',
+          color: '#999'
+        }}>
+          Loading...
+        </div>
+      );
     }
 
     if (!user) return null;
