@@ -56,7 +56,9 @@ const quizFormSchema = z.discriminatedUnion('mode', [textSchema, topicSchema]);
 
 type QuizFormData = z.infer<typeof quizFormSchema>;
 
-export default function AiQuizPage() {
+import { withAuth } from '@/components/WithAuth';
+
+function AiQuizPageContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [attemptInfo, setAttemptInfo] = useState<AttemptInfo | null>(null);
   const [loadingAttempts, setLoadingAttempts] = useState(true);
@@ -390,3 +392,5 @@ The AI will create multiple-choice questions about your chosen topic."
     </Container>
   );
 }
+
+export default withAuth(AiQuizPageContent);

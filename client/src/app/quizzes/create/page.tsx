@@ -727,10 +727,14 @@ function CreateQuizPageContent() {
   );
 }
 
-export default function CreateQuizPage() {
+import { withAuth } from '@/components/WithAuth';
+
+function CreateQuizPageWrapper() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <CreateQuizPageContent />
     </Suspense>
   );
 }
+
+export default withAuth(CreateQuizPageWrapper);

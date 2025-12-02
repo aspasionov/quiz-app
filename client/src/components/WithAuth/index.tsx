@@ -9,10 +9,9 @@ import { authManager } from '@/utils/authManager';
 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function withAuth<T extends Record<string, any>>(
-  Component: React.ComponentType<T>
-) {
-  const AuthComponent = (props: T) => {
+export function withAuth(Component: React.ComponentType<any>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const AuthComponent = (props?: any) => {
     const { user, isLoading } = useUserStore();
     const router = useRouter();
     const hasInitialized = useRef(false);
@@ -47,8 +46,19 @@ export function withAuth<T extends Record<string, any>>(
     }, [router]);
 
     // Show loading state while checking authentication
-    if (isLoading || (!hasInitialized.current && !user)) {
-      return null; // or a loading spinner
+    if (isLoading || !hasInitialized.current) {
+      return (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontSize: '16px',
+          color: '#999'
+        }}>
+          Loading...
+        </div>
+      );
     }
 
     if (!user) return null;
