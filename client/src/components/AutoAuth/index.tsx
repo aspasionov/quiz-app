@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { authManager } from '@/utils/authManager';
 import useUserStore from '@/stores/useUserStore';
 
 export default function AutoAuth() {
-  const router = useRouter();
   const { user, setLoading } = useUserStore();
 
   useEffect(() => {
@@ -27,7 +25,7 @@ export default function AutoAuth() {
       try {
         setLoading(true);
         await authManager.ensureAuthenticated();
-      } catch (error) {
+      } catch {
         // Token is invalid or expired, clear it
         localStorage.removeItem('token');
         authManager.clearAuthCache();
