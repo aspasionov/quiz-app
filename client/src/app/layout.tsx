@@ -3,6 +3,7 @@ import Script from "next/script";
 import ThemeProvider from "@/components/ThemeProvider";
 import Header from "@/components/Header";
 import SnackBar from "@/components/SnackBar";
+import AutoAuth from "@/components/AutoAuth";
 import { DynaPuff } from "next/font/google";
 
 
@@ -44,6 +45,7 @@ export default function RootLayout({
       </head>
       <body className={dynaPuff.variable}>
         <ThemeProvider>
+          <AutoAuth/>
           <Header/>
           {children}
           <SnackBar/>
