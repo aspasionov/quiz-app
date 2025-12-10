@@ -126,9 +126,9 @@ function AiQuizPageContent() {
         
         // Track successful quiz creation
         analytics.quiz.create(
-          response.data.quizId, 
-          response.data.title || 'AI Generated Quiz',
-          response.data.questionCount || 5
+          response.data.quizId,
+          response.data.quiz.title || 'AI Generated Quiz',
+          response.data.quiz.questions.length || 5
         );
         
         // Redirect to the quiz taking page with source parameter
