@@ -4,6 +4,7 @@ import ThemeProvider from "@/components/ThemeProvider";
 import Header from "@/components/Header";
 import SnackBar from "@/components/SnackBar";
 import AutoAuth from "@/components/AutoAuth";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { DynaPuff } from "next/font/google";
 
 
@@ -44,6 +45,7 @@ export default function RootLayout({
         />
       </head>
       <body className={dynaPuff.variable}>
+        <GoogleAnalytics />
         <ThemeProvider>
           <AutoAuth/>
           <Header/>

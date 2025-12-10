@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 import { quizApi } from '@/api/quiz.api';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface AttemptInfo {
   attemptsUsed: number;
@@ -65,6 +66,7 @@ function AiQuizPageContent() {
   const fetchedRef = React.useRef(false);
   const router = useRouter();
   const { showSnackbar } = useSnackBarStore();
+  const analytics = useAnalytics();
 
   const {
     control,
@@ -113,20 +115,37 @@ function AiQuizPageContent() {
     try {
       // Use the appropriate content based on mode
       const content = data.mode === 'text' ? data.text!.trim() : data.topic!.trim();
+      
+      // Track the quiz generation attempt
+      analytics.page.generateQuiz(content.substring(0, 100), 1); // Limit content length for tracking
+      
       const response = await quizApi.generateAiQuiz(content, data.mode);
 
       if (response.success && response.data) {
         showSnackbar('AI quiz generated successfully!', 'success');
+        
+        // Track successful quiz creation
+        analytics.quiz.create(
+          response.data.quizId, 
+          response.data.title || 'AI Generated Quiz',
+          response.data.questionCount || 5
+        );
+        
         // Redirect to the quiz taking page with source parameter
         router.push(`/quizzes/${response.data.quizId}?source=quiz-generator`);
       } else {
         showSnackbar(response.message || 'Failed to generate quiz', 'error');
+        analytics.track('quiz_generation_failed', 'ai', data.mode);
       }
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const err = error as any;
       console.error('Error generating quiz:', error);
 
+      
+      // Track the error
+      analytics.track('quiz_generation_error', 'ai', data.mode);
+      
       // Handle specific error cases
       if (err.response?.status === 400) {
         const errorData = err.response.data;
