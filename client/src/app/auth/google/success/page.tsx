@@ -6,6 +6,8 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 import useUserStore from '@/stores/useUserStore';
 import useSnackBarStore from '@/stores/useSnackBarStore';
 
+export const dynamic = 'force-dynamic';
+
 function GoogleAuthSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();

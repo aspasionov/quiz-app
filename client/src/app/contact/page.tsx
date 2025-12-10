@@ -7,8 +7,15 @@ import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
 import EmailIcon from '@mui/icons-material/Email';
 import { HEADER_HEIGHT } from '@/constans';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 export default function Contact() {
+  const analytics = useAnalytics();
+
+  const handleEmailClick = () => {
+    analytics.page.contactSubmit();
+  };
+
   return (
     <Box sx={{ minHeight: `calc(100vh - ${HEADER_HEIGHT}px)`, py: 4, bgcolor: 'background.default' }}>
       <Container maxWidth="lg" sx={{ textAlign: 'center' }}>
@@ -44,6 +51,7 @@ export default function Contact() {
               <EmailIcon sx={{ color: 'primary.main' }} />
               <Link 
                 href="mailto:quizgeneratorhelp@gmail.com"
+                onClick={handleEmailClick}
                 sx={{ 
                   fontSize: '1.25rem', 
                   fontWeight: 'bold',
