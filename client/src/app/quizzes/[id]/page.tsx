@@ -27,6 +27,7 @@ import {
   Cancel as CancelIcon,
   Timer as TimerIcon,
   Star as StarIcon,
+  Leaderboard as LeaderboardIcon,
 } from '@mui/icons-material';
 import { quizApi, type Quiz } from '@/api/quiz.api';
 import useSnackBarStore from '@/stores/useSnackBarStore';
@@ -68,6 +69,8 @@ export default function QuizTakingPage() {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [submissionRank, setSubmissionRank] = useState<{ rank: number; totalSubmissions: number } | null>(null);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -182,7 +185,7 @@ export default function QuizTakingPage() {
     setShowExplanation(true);
   };
 
-  const finishQuiz = (answers: UserAnswer[]) => {
+  const finishQuiz = async (answers: UserAnswer[]) => {
     if (!quiz) return;
 
     const totalPoints = answers.reduce((sum, answer) => sum + answer.points, 0);
@@ -200,6 +203,50 @@ export default function QuizTakingPage() {
 
     setQuizResult(result);
     setShowResults(true);
+
+    // Submit quiz results to backend
+    if (user) {
+      try {
+        const submissionData = {
+          score: totalPoints,
+          maxPoints: quiz.maxPoints,
+          percentage,
+          correctAnswers,
+          totalQuestions: quiz.questions.length,
+          timeSpent: elapsedTime,
+          answers: answers.map(answer => ({
+            questionId: answer.questionId,
+            selectedOptionId: answer.selectedOptionId,
+            isCorrect: answer.isCorrect,
+            points: answer.points,
+          })),
+        };
+
+        const response = await quizApi.submitQuiz(quizId, submissionData);
+
+        if (response.success && response.data) {
+          setSubmissionRank({
+            rank: response.data.rank,
+            totalSubmissions: response.data.totalSubmissions,
+          });
+          setSubmissionError(null);
+        }
+      } catch (error: unknown) {
+        console.error('Error submitting quiz:', error);
+        let errorMessage = 'Could not save your score';
+
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response?: { data?: { message?: string } } };
+          errorMessage = axiosError.response?.data?.message || errorMessage;
+        }
+
+        setSubmissionError(errorMessage);
+        showSnackbar(
+          `${errorMessage}. Results shown but not saved to leaderboard.`,
+          'warning'
+        );
+      }
+    }
   };
 
   const handleRetakeQuiz = () => {
@@ -211,6 +258,8 @@ export default function QuizTakingPage() {
     setStartTime(new Date());
     setElapsedTime(0);
     setShowExplanation(false);
+    setSubmissionRank(null);
+    setSubmissionError(null);
   };
 
   const handleBackToQuizzes = () => {
@@ -345,14 +394,34 @@ export default function QuizTakingPage() {
               )}
             </Box>
 
+            {/* Rank Information */}
+            {submissionRank && (
+              <Box sx={{ mb: 3, textAlign: 'center' }}>
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                  <Typography variant="body2">
+                    Your rank: <strong>#{submissionRank.rank}</strong> out of {submissionRank.totalSubmissions} {submissionRank.totalSubmissions === 1 ? 'submission' : 'submissions'}
+                  </Typography>
+                </Alert>
+              </Box>
+            )}
+
+            {/* Submission Error */}
+            {submissionError && (
+              <Box sx={{ mb: 3 }}>
+                <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                  {submissionError}. Results shown but not saved to leaderboard.
+                </Alert>
+              </Box>
+            )}
+
             {/* Action Buttons */}
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Button
                 variant="outlined"
                 size="large"
                 onClick={handleRetakeQuiz}
-                sx={{ 
-                  borderRadius: 2, 
+                sx={{
+                  borderRadius: 2,
                   px: 3,
                   textTransform: 'none',
                   fontWeight: 600
@@ -361,11 +430,25 @@ export default function QuizTakingPage() {
                 Retake Quiz
               </Button>
               <Button
+                variant="outlined"
+                size="large"
+                startIcon={<LeaderboardIcon />}
+                onClick={() => router.push(`/quizzes/${quizId}/leaderboard`)}
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  textTransform: 'none',
+                  fontWeight: 600
+                }}
+              >
+                View Leaderboard
+              </Button>
+              <Button
                 variant="contained"
                 size="large"
                 onClick={handleBackToQuizzes}
-                sx={{ 
-                  borderRadius: 2, 
+                sx={{
+                  borderRadius: 2,
                   px: 3,
                   textTransform: 'none',
                   fontWeight: 600
@@ -520,7 +603,6 @@ export default function QuizTakingPage() {
           {currentQuestionIndex < quiz.questions.length - 1 ? 'Next Question' : 'Finish Quiz'}
         </Button>
       </Box>
-
     </Container>
   );
 }
