@@ -71,10 +71,10 @@ const quizSubmissionSchema = new Schema({
   }
 });
 
+// Unique index: one submission per user per quiz
+quizSubmissionSchema.index({ user: 1, quiz: 1 }, { unique: true });
+
 // Compound index for leaderboard queries (optimized for sorting by score DESC, time ASC)
 quizSubmissionSchema.index({ quiz: 1, score: -1, timeSpent: 1 });
-
-// Compound index for user's quiz attempts
-quizSubmissionSchema.index({ user: 1, quiz: 1, completedAt: -1 });
 
 module.exports = model('QuizSubmission', quizSubmissionSchema);

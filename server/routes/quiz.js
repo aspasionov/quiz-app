@@ -461,11 +461,15 @@ router.delete('/:id', auth, async (req, res) => {
       });
     }
 
+    // Delete quiz and all associated submissions
     await Quiz.findByIdAndDelete(req.params.id);
+
+    // Delete all submissions for this quiz
+    await QuizSubmission.deleteMany({ quiz: req.params.id });
 
     res.json({
       success: true,
-      message: 'Quiz deleted successfully'
+      message: 'Quiz and associated submissions deleted successfully'
     });
 
   } catch (error) {
@@ -629,57 +633,83 @@ router.post('/:id/submit', auth, quizSubmissionValidator, async (req, res) => {
       });
     }
 
-    // Create quiz submission
-    const submission = new QuizSubmission({
+    // Check if user already has a submission for this quiz
+    const existingSubmission = await QuizSubmission.findOne({
       quiz: quizId,
-      user: req.userId,
-      score,
-      maxPoints,
-      percentage,
-      correctAnswers,
-      totalQuestions,
-      timeSpent,
-      answers
+      user: req.userId
     });
 
-    await submission.save();
+    let submission;
+    let isUpdate = false;
 
-    // Calculate user's rank
-    // Count submissions with higher score, or same score but faster time
-    const betterSubmissionsCount = await QuizSubmission.aggregate([
-      { $match: { quiz: quiz._id } },
-      { $sort: { user: 1, score: -1, timeSpent: 1 } },
-      {
-        $group: {
-          _id: '$user',
-          bestSubmission: { $first: '$$ROOT' }
-        }
-      },
-      { $replaceRoot: { newRoot: '$bestSubmission' } },
-      {
-        $match: {
-          $or: [
-            { score: { $gt: score } },
-            { score: score, timeSpent: { $lt: timeSpent } },
-            { score: score, timeSpent: timeSpent, completedAt: { $lt: submission.completedAt } }
-          ]
-        }
-      },
-      { $count: 'count' }
-    ]);
+    if (existingSubmission) {
+      // Check if new result is better (higher score, or same score with faster time)
+      const isBetterScore = score > existingSubmission.score;
+      const isSameScoreFasterTime = score === existingSubmission.score && timeSpent < existingSubmission.timeSpent;
 
-    const rank = (betterSubmissionsCount[0]?.count || 0) + 1;
+      if (isBetterScore || isSameScoreFasterTime) {
+        // Update existing submission with better result
+        existingSubmission.score = score;
+        existingSubmission.maxPoints = maxPoints;
+        existingSubmission.percentage = percentage;
+        existingSubmission.correctAnswers = correctAnswers;
+        existingSubmission.totalQuestions = totalQuestions;
+        existingSubmission.timeSpent = timeSpent;
+        existingSubmission.answers = answers;
+        existingSubmission.completedAt = new Date();
+        await existingSubmission.save();
+        submission = existingSubmission;
+        isUpdate = true;
+      } else {
+        // Keep existing better submission, but still return it
+        submission = existingSubmission;
+        isUpdate = false;
+      }
+    } else {
+      // Create new submission
+      submission = new QuizSubmission({
+        quiz: quizId,
+        user: req.userId,
+        score,
+        maxPoints,
+        percentage,
+        correctAnswers,
+        totalQuestions,
+        timeSpent,
+        answers
+      });
+      await submission.save();
+    }
 
-    // Get total unique users who submitted
-    const totalSubmissions = await QuizSubmission.distinct('user', { quiz: quizId });
+    // Calculate user's rank (simplified - no grouping needed since one submission per user)
+    const allSubmissions = await QuizSubmission.find({ quiz: quizId })
+      .select('score timeSpent completedAt')
+      .lean();
 
-    res.status(201).json({
+    // Sort submissions by score DESC, timeSpent ASC, completedAt ASC
+    const sortedSubmissions = allSubmissions.sort((a, b) => {
+      if (a.score !== b.score) return b.score - a.score;
+      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
+      return new Date(a.completedAt) - new Date(b.completedAt);
+    });
+
+    // Find rank of current submission
+    const rank = sortedSubmissions.findIndex(s =>
+      s._id.toString() === submission._id.toString()
+    ) + 1;
+
+    const totalSubmissions = allSubmissions.length;
+
+    res.status(isUpdate ? 200 : 201).json({
       success: true,
-      message: 'Quiz submission saved successfully',
+      message: isUpdate
+        ? 'Quiz submission updated successfully'
+        : 'Quiz submission saved successfully',
       data: {
         submissionId: submission._id,
         rank,
-        totalSubmissions: totalSubmissions.length
+        totalSubmissions,
+        isImprovement: isUpdate
       }
     });
 
@@ -743,28 +773,13 @@ router.get('/:id/leaderboard', async (req, res) => {
       });
     }
 
-    // Get all submissions for this quiz
+    // Get all submissions for this quiz (one per user)
     const allSubmissions = await QuizSubmission.find({ quiz: quizId })
       .populate('user', 'name avatar')
       .lean();
 
-    // Group by user, keep best submission (highest score, fastest time)
-    const bestByUser = new Map();
-    allSubmissions.forEach(sub => {
-      const userId = sub.user._id.toString();
-      const current = bestByUser.get(userId);
-
-      if (!current ||
-          sub.score > current.score ||
-          (sub.score === current.score && sub.timeSpent < current.timeSpent) ||
-          (sub.score === current.score && sub.timeSpent === current.timeSpent &&
-           new Date(sub.completedAt) < new Date(current.completedAt))) {
-        bestByUser.set(userId, sub);
-      }
-    });
-
-    // Sort and rank
-    let leaderboard = Array.from(bestByUser.values())
+    // Sort and rank (no grouping needed - already one submission per user)
+    let leaderboard = allSubmissions
       .sort((a, b) => {
         if (a.score !== b.score) return b.score - a.score;
         if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
@@ -841,32 +856,19 @@ router.get('/:id/submissions', auth, async (req, res) => {
       });
     }
 
-    // Get all user's submissions for this quiz
-    const submissions = await QuizSubmission.find({
+    // Get user's submission for this quiz (max 1 per user)
+    const submission = await QuizSubmission.findOne({
       quiz: quizId,
       user: req.userId
     })
-      .sort({ completedAt: -1 })
       .select('-answers')
       .lean();
-
-    // Find best submission (highest score, fastest time)
-    let bestSubmission = null;
-    if (submissions.length > 0) {
-      bestSubmission = submissions.reduce((best, current) => {
-        if (!best) return current;
-        if (current.score > best.score) return current;
-        if (current.score === best.score && current.timeSpent < best.timeSpent) return current;
-        return best;
-      }, null);
-    }
 
     res.json({
       success: true,
       data: {
-        submissions,
-        bestSubmission,
-        count: submissions.length
+        submission: submission || null,
+        hasSubmission: !!submission
       }
     });
 
