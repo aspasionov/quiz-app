@@ -15,20 +15,15 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Avatar,
   CircularProgress,
   Alert,
   Chip,
   IconButton,
-  Breadcrumbs,
-  Link,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   EmojiEvents as TrophyIcon,
-  Home as HomeIcon,
-  Quiz as QuizIcon,
 } from '@mui/icons-material';
 import { quizApi, type LeaderboardEntry, type Quiz } from '@/api/quiz.api';
 import useSnackBarStore from '@/stores/useSnackBarStore';
@@ -43,7 +38,6 @@ function LeaderboardPageContent() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [total, setTotal] = useState(0);
-  const [currentUserRank, setCurrentUserRank] = useState<{ rank: number; submission: LeaderboardEntry } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [limit] = useState(50);
@@ -68,7 +62,6 @@ function LeaderboardPageContent() {
         if (leaderboardResponse.success && leaderboardResponse.data) {
           setLeaderboard(leaderboardResponse.data.leaderboard);
           setTotal(leaderboardResponse.data.total);
-          setCurrentUserRank(leaderboardResponse.data.currentUserRank || null);
         }
       } catch (err: unknown) {
         console.error('Error fetching leaderboard:', err);
@@ -94,7 +87,7 @@ function LeaderboardPageContent() {
     };
 
     fetchData();
-  }, [quizId, offset]);
+  }, [quizId, offset, limit, router, showSnackbar]);
 
   const handleLoadMore = () => {
     setOffset(offset + limit);
