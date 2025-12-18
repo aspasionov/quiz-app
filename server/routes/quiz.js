@@ -1,8 +1,10 @@
 const express = require('express');
 const { body } = require('express-validator');
 const Quiz = require('../models/quiz');
+const QuizSubmission = require('../models/quizSubmission');
 const auth = require('../helper/auth');
 const { validationResult } = require('express-validator');
+const { quizSubmissionValidator } = require('../validators');
 
 const router = express.Router();
 
@@ -459,11 +461,15 @@ router.delete('/:id', auth, async (req, res) => {
       });
     }
 
+    // Delete quiz and all associated submissions
     await Quiz.findByIdAndDelete(req.params.id);
+
+    // Delete all submissions for this quiz
+    await QuizSubmission.deleteMany({ quiz: req.params.id });
 
     res.json({
       success: true,
-      message: 'Quiz deleted successfully'
+      message: 'Quiz and associated submissions deleted successfully'
     });
 
   } catch (error) {
@@ -556,7 +562,7 @@ router.get('/user/:userId', async (req, res) => {
 router.get('/user/count', auth, async (req, res) => {
   try {
     const count = await Quiz.countDocuments({ author: req.userId });
-    
+
     res.json({
       success: true,
       data: {
@@ -570,6 +576,315 @@ router.get('/user/count', auth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while getting quiz count'
+    });
+  }
+});
+
+// POST /api/quiz/:id/submit - Submit quiz attempt
+router.post('/:id/submit', auth, quizSubmissionValidator, async (req, res) => {
+  try {
+    // Check validation results
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const quizId = req.params.id;
+    const { score, maxPoints, percentage, correctAnswers, totalQuestions, timeSpent, answers } = req.body;
+
+    // Verify quiz exists
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({
+        success: false,
+        message: 'Quiz not found'
+      });
+    }
+
+    // Check if user has access to quiz (public or owner)
+    const isPublic = quiz.visibility === 'public';
+    const isOwner = quiz.author.toString() === req.userId;
+
+    if (!isPublic && !isOwner) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. You do not have permission to submit this quiz.'
+      });
+    }
+
+    // Verify score doesn't exceed maxPoints
+    if (score > maxPoints) {
+      return res.status(400).json({
+        success: false,
+        message: 'Score cannot exceed max points'
+      });
+    }
+
+    // Verify percentage calculation is correct
+    const calculatedPercentage = maxPoints > 0 ? (score / maxPoints) * 100 : 0;
+    if (Math.abs(percentage - calculatedPercentage) > 0.1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Percentage calculation is incorrect'
+      });
+    }
+
+    // Check if user already has a submission for this quiz
+    const existingSubmission = await QuizSubmission.findOne({
+      quiz: quizId,
+      user: req.userId
+    });
+
+    let submission;
+    let isUpdate = false;
+
+    if (existingSubmission) {
+      // Check if new result is better (higher score, or same score with faster time)
+      const isBetterScore = score > existingSubmission.score;
+      const isSameScoreFasterTime = score === existingSubmission.score && timeSpent < existingSubmission.timeSpent;
+
+      if (isBetterScore || isSameScoreFasterTime) {
+        // Update existing submission with better result
+        existingSubmission.score = score;
+        existingSubmission.maxPoints = maxPoints;
+        existingSubmission.percentage = percentage;
+        existingSubmission.correctAnswers = correctAnswers;
+        existingSubmission.totalQuestions = totalQuestions;
+        existingSubmission.timeSpent = timeSpent;
+        existingSubmission.answers = answers;
+        existingSubmission.completedAt = new Date();
+        await existingSubmission.save();
+        submission = existingSubmission;
+        isUpdate = true;
+      } else {
+        // Keep existing better submission, but still return it
+        submission = existingSubmission;
+        isUpdate = false;
+      }
+    } else {
+      // Create new submission
+      submission = new QuizSubmission({
+        quiz: quizId,
+        user: req.userId,
+        score,
+        maxPoints,
+        percentage,
+        correctAnswers,
+        totalQuestions,
+        timeSpent,
+        answers
+      });
+      await submission.save();
+    }
+
+    // Calculate user's rank (simplified - no grouping needed since one submission per user)
+    const allSubmissions = await QuizSubmission.find({ quiz: quizId })
+      .select('score timeSpent completedAt')
+      .lean();
+
+    // Sort submissions by score DESC, timeSpent ASC, completedAt ASC
+    const sortedSubmissions = allSubmissions.sort((a, b) => {
+      if (a.score !== b.score) return b.score - a.score;
+      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
+      return new Date(a.completedAt) - new Date(b.completedAt);
+    });
+
+    // Find rank of current submission
+    const rank = sortedSubmissions.findIndex(s =>
+      s._id.toString() === submission._id.toString()
+    ) + 1;
+
+    const totalSubmissions = allSubmissions.length;
+
+    res.status(isUpdate ? 200 : 201).json({
+      success: true,
+      message: isUpdate
+        ? 'Quiz submission updated successfully'
+        : 'Quiz submission saved successfully',
+      data: {
+        submissionId: submission._id,
+        rank,
+        totalSubmissions,
+        isImprovement: isUpdate
+      }
+    });
+
+  } catch (error) {
+    console.error('Error submitting quiz:', error);
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid quiz ID'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error while submitting quiz'
+    });
+  }
+});
+
+// GET /api/quiz/:id/leaderboard - Get quiz leaderboard
+router.get('/:id/leaderboard', async (req, res) => {
+  try {
+    const quizId = req.params.id;
+    const { limit = 10, offset = 0 } = req.query;
+
+    const limitNum = Math.min(parseInt(limit), 100);
+    const offsetNum = parseInt(offset);
+
+    // Verify quiz exists
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({
+        success: false,
+        message: 'Quiz not found'
+      });
+    }
+
+    // Get user ID from token if available (optional authentication)
+    let currentUserId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7);
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.SECRET);
+        currentUserId = decoded._id;
+      } catch (error) {
+        // Invalid token, continue as unauthenticated user
+      }
+    }
+
+    // Check access permissions
+    const isPublic = quiz.visibility === 'public';
+    const isOwner = currentUserId && quiz.author.toString() === currentUserId;
+
+    if (!isPublic && !isOwner) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. You do not have permission to view this leaderboard.'
+      });
+    }
+
+    // Get all submissions for this quiz (one per user)
+    const allSubmissions = await QuizSubmission.find({ quiz: quizId })
+      .populate('user', 'name avatar')
+      .lean();
+
+    // Sort and rank (no grouping needed - already one submission per user)
+    let leaderboard = allSubmissions
+      .sort((a, b) => {
+        if (a.score !== b.score) return b.score - a.score;
+        if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
+        return new Date(a.completedAt) - new Date(b.completedAt);
+      })
+      .map((sub, index) => ({
+        rank: index + 1,
+        user: {
+          _id: sub.user._id,
+          name: sub.user.name,
+          avatar: sub.user.avatar
+        },
+        score: sub.score,
+        percentage: sub.percentage,
+        timeSpent: sub.timeSpent,
+        completedAt: sub.completedAt,
+        isCurrentUser: currentUserId ? sub.user._id.toString() === currentUserId : false
+      }));
+
+    const total = leaderboard.length;
+
+    // Find current user's rank (before pagination)
+    let currentUserRank = null;
+    if (currentUserId) {
+      const userEntry = leaderboard.find(entry => entry.user._id.toString() === currentUserId);
+      if (userEntry) {
+        currentUserRank = {
+          rank: userEntry.rank,
+          submission: userEntry
+        };
+      }
+    }
+
+    // Apply pagination
+    leaderboard = leaderboard.slice(offsetNum, offsetNum + limitNum);
+
+    res.json({
+      success: true,
+      data: {
+        leaderboard,
+        total,
+        currentUserRank
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid quiz ID'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching leaderboard'
+    });
+  }
+});
+
+// GET /api/quiz/:id/submissions - Get user's submissions for a quiz
+router.get('/:id/submissions', auth, async (req, res) => {
+  try {
+    const quizId = req.params.id;
+
+    // Verify quiz exists
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({
+        success: false,
+        message: 'Quiz not found'
+      });
+    }
+
+    // Get user's submission for this quiz (max 1 per user)
+    const submission = await QuizSubmission.findOne({
+      quiz: quizId,
+      user: req.userId
+    })
+      .select('-answers')
+      .lean();
+
+    res.json({
+      success: true,
+      data: {
+        submission: submission || null,
+        hasSubmission: !!submission
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching user submissions:', error);
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid quiz ID'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching submissions'
     });
   }
 });

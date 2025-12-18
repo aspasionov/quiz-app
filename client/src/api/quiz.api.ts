@@ -95,6 +95,62 @@ export interface AiQuizGenerationResponse {
   };
 }
 
+export interface QuizSubmissionData {
+  score: number;
+  maxPoints: number;
+  percentage: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  timeSpent: number;
+  answers: Array<{
+    questionId: string;
+    selectedOptionId: string;
+    isCorrect: boolean;
+    points: number;
+  }>;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  user: {
+    _id: string;
+    name: string;
+    avatar?: string;
+  };
+  score: number;
+  percentage: number;
+  timeSpent: number;
+  completedAt: string;
+  isCurrentUser: boolean;
+}
+
+export interface LeaderboardResponse {
+  leaderboard: LeaderboardEntry[];
+  total: number;
+  currentUserRank?: {
+    rank: number;
+    submission: LeaderboardEntry;
+  };
+}
+
+export interface UserSubmissionsResponse {
+  submissions: Array<{
+    _id: string;
+    score: number;
+    percentage: number;
+    timeSpent: number;
+    completedAt: string;
+  }>;
+  bestSubmission: {
+    _id: string;
+    score: number;
+    percentage: number;
+    timeSpent: number;
+    completedAt: string;
+  } | null;
+  count: number;
+}
+
 // Quiz API functions
 export const quizApi = {
   // Get all quizzes with optional filters
@@ -149,6 +205,33 @@ export const quizApi = {
   // Get current user's quiz count
   getUserQuizCount: async (): Promise<ApiResponse<{ count: number; maxLimit: number; remaining: number }>> => {
     const response: AxiosResponse<ApiResponse<{ count: number; maxLimit: number; remaining: number }>> = await api.get('/api/quiz/user/count');
+    return response.data;
+  },
+
+  // Submit quiz attempt
+  submitQuiz: async (
+    quizId: string,
+    data: QuizSubmissionData
+  ): Promise<ApiResponse<{ submissionId: string; rank: number; totalSubmissions: number }>> => {
+    const response: AxiosResponse<ApiResponse<{ submissionId: string; rank: number; totalSubmissions: number }>> =
+      await api.post(`/api/quiz/${quizId}/submit`, data);
+    return response.data;
+  },
+
+  // Get leaderboard for a quiz
+  getLeaderboard: async (
+    quizId: string,
+    params: { limit?: number; offset?: number } = {}
+  ): Promise<ApiResponse<LeaderboardResponse>> => {
+    const response: AxiosResponse<ApiResponse<LeaderboardResponse>> =
+      await api.get(`/api/quiz/${quizId}/leaderboard`, { params });
+    return response.data;
+  },
+
+  // Get user's submissions for a quiz
+  getUserSubmissions: async (quizId: string): Promise<ApiResponse<UserSubmissionsResponse>> => {
+    const response: AxiosResponse<ApiResponse<UserSubmissionsResponse>> =
+      await api.get(`/api/quiz/${quizId}/submissions`);
     return response.data;
   },
 };
