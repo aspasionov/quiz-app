@@ -43,6 +43,7 @@ import {
   Public as PublicIcon,
   Lock as PrivateIcon,
   Quiz as QuizIcon,
+  Leaderboard as LeaderboardIcon,
 } from '@mui/icons-material';
 import { quizApi, type Quiz } from '@/api/quiz.api';
 import useSnackBarStore from '@/stores/useSnackBarStore';
@@ -241,6 +242,19 @@ function QuizzesPageContent() {
   const cancelDeleteQuiz = () => {
     setDeleteDialogOpen(false);
     setQuizToDelete(null);
+  };
+
+  const handleViewLeaderboard = (quizId: string) => {
+    router.push(`/quizzes/${quizId}/leaderboard`);
+  };
+
+  const canViewLeaderboard = (quiz: Quiz): boolean => {
+    // Public quizzes - anyone can view leaderboard
+    if (quiz.visibility === 'public') {
+      return true;
+    }
+    // Private quizzes - only owner can view leaderboard
+    return isQuizOwner(quiz);
   };
 
   const getVisibilityIcon = (visibility: string) => {
@@ -587,6 +601,18 @@ function QuizzesPageContent() {
                 >
                   Take Quiz
                 </Button>
+                {/* Leaderboard button - show if public or if user is owner */}
+                {canViewLeaderboard(quiz) && (
+                  <Tooltip title="View Leaderboard">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleViewLeaderboard(quiz._id)}
+                      sx={{ color: 'primary.main', ml: 'auto' }}
+                    >
+                      <LeaderboardIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
                 {/* Only show edit/delete buttons for quiz owners */}
                 {isQuizOwner(quiz) && (
                   <>
