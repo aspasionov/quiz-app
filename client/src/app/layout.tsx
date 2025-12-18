@@ -20,13 +20,31 @@ const dynaPuff = DynaPuff({
 });
 
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "QuizApp - Create and Take Interactive Quizzes",
   description: "Create, share, and take interactive quizzes with friends and colleagues. Build engaging quizzes with multiple choice questions, track scores, and learn together.",
   icons: {
     icon: '/logo.svg',
     shortcut: '/logo.svg',
     apple: '/logo.svg',
+  },
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: "QuizApp - Create and Take Interactive Quizzes",
+    description: "Create, share, and take interactive quizzes with friends and colleagues. Build engaging quizzes with multiple choice questions, track scores, and learn together.",
+    url: siteUrl,
+    siteName: 'QuizApp',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "QuizApp - Create and Take Interactive Quizzes",
+    description: "Create, share, and take interactive quizzes with friends and colleagues.",
   },
 };
 

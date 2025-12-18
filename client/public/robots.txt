@@ -1,0 +1,10 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow crawling of API routes and auth pages
+Disallow: /api/
+Disallow: /auth/
+
+# Sitemap location
+Sitemap: https://quiz-generator.site/sitemap.xml
