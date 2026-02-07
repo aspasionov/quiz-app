@@ -1,32 +1,32 @@
-FROM node:alpine AS build                                                                                               
-  WORKDIR /app                                                                                     
-                                                                                                   
-  COPY package.json package-lock.json* ./                                                          
-                                                                                                   
-  RUN npm install                                                                                  
-                                                                                                   
-  COPY . .
+FROM node:alpine AS build
+WORKDIR /app
 
-  RUN npm run build
+COPY package.json package-lock.json* ./
 
-  FROM node:alpine
+RUN npm install
 
-  RUN deluser --remove-home node && \
-      addgroup -S appgroup && \
-      adduser -S appuser -G appgroup && \
-      rm -f /usr/bin/wget /usr/bin/curl
+COPY . .
 
-  WORKDIR /app
+RUN npm run build
 
-  COPY --from=build /app/.next ./.next
-  COPY --from=build /app/node_modules ./node_modules
-  COPY --from=build /app/package.json ./package.json
-  COPY --from=build /app/public ./public
+FROM node:alpine
 
-  RUN chown -R appuser:appgroup /app
+RUN deluser --remove-home node && \
+    addgroup -S appgroup && \
+    adduser -S appuser -G appgroup && \
+    rm -f /usr/bin/wget /usr/bin/curl
 
-  USER appuser
+WORKDIR /app
 
-  EXPOSE 3000
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/public ./public
 
-  CMD ["npm", "start", "--", "-H", "0.0.0.0"]
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
+EXPOSE 3000
+
+CMD ["npm", "start", "--", "-H", "0.0.0.0"]

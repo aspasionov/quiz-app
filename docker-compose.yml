@@ -1,58 +1,58 @@
-networks:                                                                                        
-    dev:                                                                                         
-                                                                                                   
-  services:                                                                                        
-    nginx:
-      image: nginx:stable-alpine
-      ports:
-        - "80:80"
+networks:
+  dev:
 
-      volumes:
-        - ./nginx.conf:/etc/nginx/nginx.conf
+services:
+  nginx:
+    image: nginx:stable-alpine
+    ports:
+      - "80:80"
 
-      depends_on:
-        - server
-        - client
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
 
-      networks:
-        - dev
-      restart: unless-stopped
+    depends_on:
+      - server
+      - client
 
-    server:
-      build:
-        context: ./server
-        args:
-          NODE_ENV: production
+    networks:
+      - dev
+    restart: unless-stopped
 
-      # Load environment variables from server/.env file
-      env_file:
-        - ./server/.env
-
-      # Override or add environment variables
-      environment:
+  server:
+    build:
+      context: ./server
+      args:
         NODE_ENV: production
-        PORT: ${PORT:-8080}
 
-      networks:
-        - dev
+    # Load environment variables from server/.env file
+    env_file:
+      - ./server/.env
 
-      # Add restart policy for production
-      restart: unless-stopped
+    # Override or add environment variables
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-8080}
 
-    client:
-      build:
-        context: ./client
+    networks:
+      - dev
 
-      # Load environment variables from client/.env file
-      env_file:
-        - ./client/.env
+    # Add restart policy for production
+    restart: unless-stopped
 
-      security_opt:
-        - no-new-privileges:true
-      read_only: true
-      tmpfs:
-        - /tmp:noexec,nosuid,size=64m
+  client:
+    build:
+      context: ./client
 
-      networks:
-        - dev
-      restart: unless-stopped
+    # Load environment variables from client/.env file
+    env_file:
+      - ./client/.env
+
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+
+    networks:
+      - dev
+    restart: unless-stopped
