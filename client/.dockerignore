@@ -1,8 +1,9 @@
 # Environment files (may contain secrets)
 .env
-.env.*
 .env.local
 .env.*.local
+# Allow .env.production for build-time variables
+!.env.production
 
 # Git
 .git
