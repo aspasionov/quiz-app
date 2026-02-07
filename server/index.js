@@ -21,6 +21,11 @@ app.use(cors({
 }));
 
 
+// Health check endpoint for Docker
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 app.use('/auth', authRoutes)
 app.use('/auth', googleAuthRoutes)
 app.use('/api/quiz', quizRoutes)

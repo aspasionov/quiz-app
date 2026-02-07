@@ -1,15 +1,15 @@
-FROM node:alpine AS build
+FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
 
-RUN npm install
+RUN npm ci
 
 COPY . .
 
 RUN npm run build
 
-FROM node:alpine
+FROM node:20-alpine
 
 RUN deluser --remove-home node && \
     addgroup -S appgroup && \
@@ -28,5 +28,9 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 EXPOSE 3000
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000', (r) => process.exit(r.statusCode === 200 ? 0 : 1))" || exit 1
 
 CMD ["npm", "start", "--", "-H", "0.0.0.0"]
