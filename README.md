@@ -112,6 +112,40 @@ quiz-app/
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8080
 
+### Docker Deployment (Production)
+
+1. **Configure environment files**
+   ```bash
+   # server/.env
+   MONGO_DB_URI=your_mongodb_connection_string
+   SECRET=your_jwt_secret_key
+   PORT=8080
+   CLIENT_URL=https://your-domain.com
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
+   OPENAI_API_KEY=your_openai_api_key
+
+   # client/.env
+   NEXT_PUBLIC_API_URL=https://your-domain.com
+   NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
+   ```
+
+2. **Build and run containers**
+   ```bash
+   docker-compose up -d --build
+   ```
+
+3. **Useful commands**
+   ```bash
+   docker-compose logs -f          # View logs
+   docker-compose down              # Stop all services
+   docker-compose restart server    # Restart specific service
+   ```
+
+4. **Access the application**
+   - Application runs on port 80 (nginx)
+   - Use Cloudflare or similar for SSL/HTTPS
+
 ## 🗄️ Data Models
 
 ### User
