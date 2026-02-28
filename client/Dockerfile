@@ -1,34 +1,46 @@
-FROM node:20-alpine AS build
+# ── Stage 1: Install dependencies ──
+FROM node:20-alpine AS deps
+
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
 
-RUN npm ci
+RUN npm ci && npm cache clean --force
 
+# ── Stage 2: Build the Next.js application ──
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Build-time environment variables for Next.js static optimization
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_SITE_URL
 ARG NEXT_PUBLIC_GA_MEASUREMENT_ID
 
 RUN npm run build
 
+# ── Stage 3: Production runtime (minimal) ──
 FROM node:20-alpine
 
+# Create non-root user with minimal permissions
 RUN deluser --remove-home node && \
     addgroup -S appgroup && \
     adduser -S appuser -G appgroup && \
-    rm -f /usr/bin/wget /usr/bin/curl
+    # Remove utilities that could be used for lateral movement
+    rm -f /usr/bin/wget /usr/bin/curl /usr/bin/nc
 
 WORKDIR /app
 
-COPY --from=build /app/.next ./.next
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/public ./public
+# Copy only production artifacts from build stage
+COPY --from=build --chown=appuser:appgroup /app/.next ./.next
+COPY --from=build --chown=appuser:appgroup /app/node_modules ./node_modules
+COPY --from=build --chown=appuser:appgroup /app/package.json ./package.json
+COPY --from=build --chown=appuser:appgroup /app/public ./public
 
-RUN chown -R appuser:appgroup /app
-
+# Switch to non-root user
 USER appuser
 
 EXPOSE 3000
